@@ -20,8 +20,8 @@ antlrcpp::Any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 
 antlrcpp::Any CodeGenVisitor::visitProgBegin(ifccParser::ProgBeginContext *ctx)
 {
-	cout << ".globl	_main\n"
-			" _main: \n"
+	cout << ".globl	" << main << "\n"
+			<< main << ": \n"
 			"	pushq	%rbp\n"
 			"	movq	%rsp, %rbp\n";
 	return visitChildren(ctx);
