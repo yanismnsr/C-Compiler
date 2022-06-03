@@ -47,6 +47,12 @@ antlrcpp::Any CodeGenVisitor::visitReturn(ifccParser::ReturnContext *ctx) {
 	antlr4::tree::TerminalNode* constant = ctx->CONST();
 	this->returnPresent = true;
 	if (variable != nullptr) {
+
+		if (variableToMemoryMap.find(variable->getText()) == variableToMemoryMap.end())
+		{
+			throw std::runtime_error("Variable " + variable->getText() + " not declared");
+		}
+
 		int variableAddress = (variableToMemoryMap[variable->getText()]) * -4;
 		cout << " 	movl	" << variableAddress << "(%rbp), %eax\n";
 	} else if (constant != nullptr) {
