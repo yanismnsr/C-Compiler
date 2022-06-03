@@ -1,5 +1,0 @@
-line 2:11 token recognition error at: 'x'
-line 2:12 missing CONST at ';'
-error: syntax error during parsing
-
-return code: 1

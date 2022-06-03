@@ -11,12 +11,7 @@ _main:                                  ## @main
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
 	movl	$0, -4(%rbp)
-	movl	$4, -8(%rbp)		# a
-	movl	$5, -12(%rbp)		# b
-	movl	-8(%rbp), %eax
-	movl	%eax, -16(%rbp)		# c
-	movl	-12(%rbp), %eax
-	movl	%eax, -8(%rbp)
+	movl	$6, -8(%rbp)
 	movl	-8(%rbp), %eax
 	popq	%rbp
 	retq
