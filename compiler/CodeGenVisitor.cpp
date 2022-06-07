@@ -7,6 +7,7 @@ using namespace std;
 
 antlrcpp::Any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 {
+	// int retval = stoi(ctx->CONST()->getText());
 	return visitChildren(ctx);
 }
 
