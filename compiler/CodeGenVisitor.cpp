@@ -5,21 +5,20 @@
 
 using namespace std;
 
-// detect and adapt for MAC_OS specificity
-string main = "main";
-
-#ifdef __APPLE__
-	main = "_main";
-#endif
-
 antlrcpp::Any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 {
-	// int retval = stoi(ctx->CONST()->getText());
 	return visitChildren(ctx);
 }
 
 antlrcpp::Any CodeGenVisitor::visitProgBegin(ifccParser::ProgBeginContext *ctx)
 {
+	// detect and adapt for MAC_OS specificity
+	string main = "main";
+
+	#ifdef __APPLE__
+		main = "_main";
+	#endif
+	
 	cout << ".globl	" << main << "\n"
 			<< main << ": \n"
 			"	pushq	%rbp\n"
