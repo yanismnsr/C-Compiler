@@ -1,9 +1,12 @@
 #include "CodeGenVisitor.h"
 #include "antlr4-runtime.h"
 #include "./generated/ifccVisitor.h"
+#include <iostream>
 #include <map>
+#include <fstream>      // std::ifstream
 
 using namespace std;
+
 
 antlrcpp::Any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 {
@@ -15,7 +18,6 @@ antlrcpp::Any CodeGenVisitor::visitProgBegin(ifccParser::ProgBeginContext *ctx)
 {
 	// detect and adapt for MAC_OS specificity
 	string main = "main";
-
 	#ifdef __APPLE__
 		main = "_main";
 	#endif

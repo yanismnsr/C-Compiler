@@ -1,11 +1,15 @@
 #pragma once
 
 #include <map>
+#include <fstream>      // std::ifstream
 
 #include "antlr4-runtime.h"
 #include "generated/ifccBaseVisitor.h"
 
 using namespace std;
+
+const string WARNING_FILE_RELATIVE_PATH = "warnings.txt";
+
 
 
 class  CodeGenVisitor : public ifccBaseVisitor {
@@ -13,6 +17,7 @@ class  CodeGenVisitor : public ifccBaseVisitor {
 	private :
 		map <string, int> variableToMemoryMap;
 		bool returnPresent = false;
+		ofstream warningsFile;
 
 	public:
 		virtual antlrcpp::Any visitProg(ifccParser::ProgContext *ctx) override ;
