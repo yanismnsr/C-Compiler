@@ -1,25 +1,25 @@
 #include "CodeGenVisitor.h"
 #include "antlr4-runtime.h"
 #include "./generated/ifccVisitor.h"
+#include <iostream>
 #include <map>
 #include <any>
 
 using namespace std;
 
-std::any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
-{
-	// int retval = stoi(ctx->CONST()->getText());
-	return visitChildren(ctx);
-}
+// {
+// 	// int retval = stoi(ctx->CONST()->getText());
+// 	return visitChildren(ctx);
+// }
 
 std::any CodeGenVisitor::visitProgBegin(ifccParser::ProgBeginContext *ctx)
 {
 	// detect and adapt for MAC_OS specificity
 	string main = "main";
 
-#ifdef __APPLE__
-	main = "_main";
-#endif
+	#ifdef __APPLE__
+		main = "_main";
+	#endif
 
 	cout << ".globl	" << main << "\n"
 		 << main << ": \n"
