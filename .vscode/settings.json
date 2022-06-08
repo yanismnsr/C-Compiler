@@ -70,6 +70,7 @@
         "iterator": "cpp",
         "utility": "cpp",
         "__tree": "cpp",
-        "map": "cpp"
+        "map": "cpp",
+        "any": "cpp"
     }
 }

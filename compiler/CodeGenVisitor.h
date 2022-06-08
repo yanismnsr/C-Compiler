@@ -7,31 +7,40 @@
 
 using namespace std;
 
+class CodeGenVisitor : public ifccBaseVisitor
+{
 
-class  CodeGenVisitor : public ifccBaseVisitor {
+private:
+	map<string, int> variableToMemoryMap;
+	bool returnPresent = false;
+	int nbTemporaryVariable = 0;
 
-	private :
-		map <string, int> variableToMemoryMap;
-		bool returnPresent = false;
+public:
+	virtual std::any visitProg(ifccParser::ProgContext *ctx) override;
 
-	public:
-		virtual antlrcpp::Any visitProg(ifccParser::ProgContext *ctx) override ;
+	virtual std::any visitProgBegin(ifccParser::ProgBeginContext *ctx) override;
 
-		virtual antlrcpp::Any visitProgBegin(ifccParser::ProgBeginContext *ctx) override ;
+	virtual std::any visitProgEnd(ifccParser::ProgEndContext *context) override;
 
-		virtual antlrcpp::Any visitProgEnd(ifccParser::ProgEndContext *context) override ;
+	// virtual std::any visitRetConst(ifccParser::RetConstContext *ctx) override ;
 
-		virtual antlrcpp::Any visitVarvar(ifccParser::VarvarContext *ctx) override ;
+	virtual std::any visitDeclaration(ifccParser::DeclarationContext *ctx) override;
 
-		// virtual antlrcpp::Any visitRetConst(ifccParser::RetConstContext *ctx) override ;
+	virtual std::any visitReturn(ifccParser::ReturnContext *ctx) override;
 
-		virtual antlrcpp::Any visitDeclaration(ifccParser::DeclarationContext *ctx) override ;
+	virtual std::any visitAddmin(ifccParser::AddminContext *ctx) override;
 
-		virtual antlrcpp::Any visitVarconst(ifccParser::VarconstContext *ctx) override ;
+	virtual std::any visitMultdiv(ifccParser::MultdivContext *ctx) override;
 
-		virtual antlrcpp::Any visitReturn(ifccParser::ReturnContext *ctx) override ;
+	virtual std::any visitParenthesis(ifccParser::ParenthesisContext *ctx) override;
 
-		// virtual std::any visitDeclareVar(ifccParser::DeclareVarContext *ctx) override ;
+	virtual std::any visitUnaryMinus(ifccParser::UnaryMinusContext *ctx) override;
 
+	virtual std::any visitExprConst(ifccParser::ExprConstContext *ctx) override ;
+
+	virtual std::any visitExprIdentifier(ifccParser::ExprIdentifierContext *ctx) override;
+
+	virtual std::any visitAffectation(ifccParser::AffectationContext *ctx) override ;
 };
 
+// virtual std::any visitDeclareVar(ifccParser::DeclareVarContext *ctx) override ;
