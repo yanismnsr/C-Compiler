@@ -53,28 +53,19 @@ std::any CodeGenVisitor::visitProgEnd(ifccParser::ProgEndContext *ctx)
 
 std::any CodeGenVisitor::visitReturn(ifccParser::ReturnContext *ctx)
 {
-	antlr4::tree::TerminalNode *variable = ctx->IDENTIFIER();
-	antlr4::tree::TerminalNode *constant = ctx->CONST();
+
+	string exprVarName = any_cast<string>(visit(ctx->expr()));
+
+	if (variableToMemoryMap.find(exprVarName) == variableToMemoryMap.end())
+	{
+		throw std::runtime_error("Variable " + exprVarName + " not declared");
+	}
+
+	int variableAddress = variableToMemoryMap[exprVarName] * -4;
 	this->returnPresent = true;
-	if (variable != nullptr)
-	{
 
-		if (variableToMemoryMap.find(variable->getText()) == variableToMemoryMap.end())
-		{
-			throw std::runtime_error("Variable " + variable->getText() + " not declared");
-		}
+	cout << " 	movl	" << variableAddress << "(%rbp), %eax		# move " << exprVarName << " to eax for return \n";
 
-		int variableAddress = (variableToMemoryMap[variable->getText()]) * -4;
-		cout << " 	movl	" << variableAddress << "(%rbp), %eax\n";
-	}
-	else if (constant != nullptr)
-	{
-		int constantValue = stoi(constant->getText());
-		cout << " 	movl	$" << constantValue << ", %eax\n";
-	}
-	else
-	{
-	}
 	return visitChildren(ctx);
 }
 
@@ -104,20 +95,20 @@ std::any CodeGenVisitor::visitAddmin(ifccParser::AddminContext *ctx)
 
 	int variable1Address = variableToMemoryMap[expr1VarName] * -4;
 	int variable2Address = variableToMemoryMap[expr2VarName] * -4;
-	cout << "	movl	" << variable1Address << "(%rbp), %eax \n";
+	cout << "	movl	" << variable1Address << "(%rbp), %eax 		# move " << expr1VarName << " to eax \n";
 	if (oper == "+")
 	{ // Addition
-		cout << "	addl	" << variable2Address << "(%rbp), %eax \n";
+		cout << "	addl	" << variable2Address << "(%rbp), %eax		# addition \n";
 	}
 	else
 	{ // Subtraction
-		cout << "	subl	" << variable2Address << "(%rbp), %eax \n";
+		cout << "	subl	" << variable2Address << "(%rbp), %eax		# substraction \n";
 	}
 
-	string tempVariableName = "#tmp" + to_string(++this->nbTemporaryVariable);
+	string tempVariableName = "#tmp" + to_string(variableToMemoryMap.size() + 1);
 	variableToMemoryMap[tempVariableName] = variableToMemoryMap.size() + 1;
 	int tempVariableAddress = variableToMemoryMap[tempVariableName] * -4;
-	cout << "	movl	%eax, " << tempVariableAddress << "(%rbp) \n";
+	cout << "	movl	%eax, " << tempVariableAddress << "(%rbp) 		# store expression result in temporary space in the stack \n";
 
 	return tempVariableName;
 }
@@ -130,19 +121,21 @@ std::any CodeGenVisitor::visitMultdiv(ifccParser::MultdivContext *ctx)
 
 	int variable1Address = variableToMemoryMap[expr1VarName] * -4;
 	int variable2Address = variableToMemoryMap[expr2VarName] * -4;
+	cout << "	movl	" << variable1Address << "(%rbp), %eax		# move operand 1 to eax \n";
 	if (oper == "*")
 	{ // Multiplication
-		cout << "	imull	" << variable2Address << "(%rbp), %eax \n";
+		cout << "	imull	" << variable2Address << "(%rbp), %eax		# apply multiplication \n";
 	}
 	else
 	{ // Division
-		cout << "	idiv	" << variable2Address << "(%rbp), %eax \n";
+		cout << "	cltd			# initialize sign register \n";
+		cout << "	idivl	" << variable2Address << "(%rbp)		# apply division \n";
 	}
 
-	string tempVariableName = "#tmp" + to_string(++this->nbTemporaryVariable);
+	string tempVariableName = "#tmp" + to_string(variableToMemoryMap.size() + 1);
 	variableToMemoryMap[tempVariableName] = variableToMemoryMap.size() + 1;
 	int tempVariableAddress = variableToMemoryMap[tempVariableName] * -4;
-	cout << "	movl	%eax, " << tempVariableAddress << "(%rbp) \n";
+	cout << "	movl	%eax, " << tempVariableAddress << "(%rbp) # store expression result in temporary space in the stack \n";
 
 	return tempVariableName;
 }
@@ -158,13 +151,13 @@ std::any CodeGenVisitor::visitExprConst(ifccParser::ExprConstContext *ctx)
 	int number = stoi(ctx->CONST()->getText());
 
 	// Store constant in a temporary variable in symbol table
-	string temporaryVariableName = "#tmp" + to_string(this->nbTemporaryVariable);
+	string temporaryVariableName = "#tmp" + to_string(variableToMemoryMap.size() + 1);
 	this->variableToMemoryMap[temporaryVariableName] = this->variableToMemoryMap.size() + 1;
 	this->nbTemporaryVariable++;
 
 	// Store constant in stack
 	int variableAddress = this->variableToMemoryMap[temporaryVariableName] * -4;
-	cout << "	movl	$" << number << ", " << variableAddress << "(%rbp) \n";
+	cout << "	movl	$" << number << ", " << variableAddress << "(%rbp) 	# Store constant in " << temporaryVariableName << " \n";
 
 	return (string)temporaryVariableName;
 }
@@ -174,38 +167,44 @@ std::any CodeGenVisitor::visitParenthesis(ifccParser::ParenthesisContext *ctx)
 	return (string) "";
 }
 
-std::any CodeGenVisitor::visitUnaryMinus(ifccParser::UnaryMinusContext *ctx)
-{
-	return (string) "";
+std::any CodeGenVisitor::visitUnaryExpression(ifccParser::UnaryExpressionContext *ctx) {
+	string oper = ctx->op->getText();
+
+	string exprVarName = any_cast<string>(visit(ctx->expr()));
+	int variableAddress = variableToMemoryMap[exprVarName] * -4;
+
+	if (oper == "-") {
+
+		// Apply minus
+		cout << "	xorl 	%eax, %eax		# reset eax \n";
+		cout << "	subl	" << variableAddress << "(%rbp), %eax		# apply minus \n";
+
+		// Temporary space in stack
+		string tempVariableName = "#tmp" + to_string(variableToMemoryMap.size() + 1);
+		variableToMemoryMap[tempVariableName] = variableToMemoryMap.size() + 1;
+		int tempVariableAddress = variableToMemoryMap[tempVariableName] * -4;
+
+		// Store result in temporary space in stack
+		cout << "	movl	%eax, " << tempVariableAddress << "(%rbp)		# store result in temporary space in stack \n";
+
+		return (string) tempVariableName;
+
+	} else {
+		return exprVarName;
+	}
 }
+
 
 std::any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 {
 	string variableName = ctx->IDENTIFIER()->getText();
-	string rValue = any_cast<string>(visit(ctx->expr()));
+	string rValueVariableName = any_cast<string>(visit(ctx->expr()));
 
 	int lValueAddress = variableToMemoryMap[variableName] * -4;
-	int rValueAddress = variableToMemoryMap[rValue] * -4;
+	int rValueAddress = variableToMemoryMap[rValueVariableName] * -4;
 
-	cout << "	movl	" << rValueAddress << "(%rbp), %eax \n";
-	cout << "	movl	%eax, " << lValueAddress << "(%rbp) \n";
+	cout << "	movl	" << rValueAddress << "(%rbp), %eax		# retrieve value from temporary space in stack \n";
+	cout << "	movl	%eax, " << lValueAddress << "(%rbp)		# affect to " << variableName << "\n";
 
 	return 0;
 }
-
-// std::any CodeGenVisitor::visitVarvar(ifccParser::VarvarContext *ctx)
-// {
-// 	return visitChildren(ctx);
-// }
-
-// std::any CodeGenVisitor::visitVarconst(ifccParser::VarconstContext *ctx) {
-// 	int constant = stoi(ctx->CONST()->getText());
-// 	int variableAddress = -(variableToMemoryMap[ctx->IDENTIFIER()->getText()] * 4);
-// 	cout << "	movl	$" << constant << ", " << variableAddress << "(%rbp) \n";
-// 	return visitChildren(ctx);
-// }
-
-// std::any CodeGenVisitor::visitDeclareVar(ifccParser::DeclareVarContext *ctx) {
-// 	cout << "declare var";
-//     return visitChildren(ctx);
-//   }

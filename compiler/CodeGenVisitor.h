@@ -19,13 +19,10 @@ private:
 	ofstream warningsFile;
 
 public:
-	// virtual std::any visitProg(ifccParser::ProgContext *ctx) override;
 
 	virtual std::any visitProgBegin(ifccParser::ProgBeginContext *ctx) override;
 
 	virtual std::any visitProgEnd(ifccParser::ProgEndContext *context) override;
-
-	// virtual std::any visitRetConst(ifccParser::RetConstContext *ctx) override ;
 
 	virtual std::any visitDeclaration(ifccParser::DeclarationContext *ctx) override;
 
@@ -37,7 +34,7 @@ public:
 
 	virtual std::any visitParenthesis(ifccParser::ParenthesisContext *ctx) override;
 
-	virtual std::any visitUnaryMinus(ifccParser::UnaryMinusContext *ctx) override;
+	virtual std::any visitUnaryExpression(ifccParser::UnaryExpressionContext *ctx) override;
 
 	virtual std::any visitExprConst(ifccParser::ExprConstContext *ctx) override;
 

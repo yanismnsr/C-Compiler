@@ -71,6 +71,7 @@
         "utility": "cpp",
         "__tree": "cpp",
         "map": "cpp",
-        "any": "cpp"
+        "any": "cpp",
+        "filesystem": "cpp"
     }
 }
