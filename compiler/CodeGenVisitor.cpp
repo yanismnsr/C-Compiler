@@ -164,7 +164,7 @@ std::any CodeGenVisitor::visitExprConst(ifccParser::ExprConstContext *ctx)
 
 std::any CodeGenVisitor::visitParenthesis(ifccParser::ParenthesisContext *ctx)
 {
-	return (string) "";
+	return any_cast<string>(visit(ctx->expr()));
 }
 
 std::any CodeGenVisitor::visitUnaryExpression(ifccParser::UnaryExpressionContext *ctx) {
