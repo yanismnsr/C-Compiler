@@ -40,7 +40,12 @@ Symbol& SymbolList::addTemporaryVariable()
 
 Symbol* SymbolList::getSymbol(string variableName)
 {
-	return variableToMemoryMap.find(variableName) == variableToMemoryMap.end() ? nullptr : variableToMemoryMap.find(variableName)->second;
+	Symbol* symbol = variableToMemoryMap.find(variableName) == variableToMemoryMap.end() ? nullptr : variableToMemoryMap.find(variableName)->second;
+	if (symbol == nullptr) 
+	{
+		cerr << "Variable \'" + variableName + "\' was not declared" << endl;
+	}
+	return symbol;
 }
 
 SymbolList* SymbolList::getInstance()

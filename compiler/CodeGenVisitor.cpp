@@ -63,7 +63,7 @@ std::any CodeGenVisitor::visitReturn(ifccParser::ReturnContext *ctx)
 	{
 		if (SymbolList::getInstance()->getSymbol(variable->getText()) == nullptr)
 		{
-			throw std::runtime_error("Variable " + variable->getText() + " not declared");
+			throw std::runtime_error("Variable \'" + variable->getText() + "\' was not declared");
 		}
 
 		int variableAddress = SymbolList::getInstance()->getSymbol(variable->getText())->memoryAddress;
@@ -107,22 +107,29 @@ std::any CodeGenVisitor::visitAddmin(ifccParser::AddminContext *ctx)
 
 //	int variable1Address = variableToMemoryMap[expr1VarName] * -4;
 //	int variable2Address = variableToMemoryMap[expr2VarName] * -4;
-//TODO gérer si variable n'est pas déclarée !!!!!!!!!!!!!!
-	cout << "	movl	" << SymbolList::getInstance()->getSymbol(expr1VarName)->memoryAddress << "(%rbp), %eax \n";
-	if (oper == "+")
-	{ // Addition
-		cout << "	addl	" << SymbolList::getInstance()->getSymbol(expr2VarName)->memoryAddress << "(%rbp), %eax \n";
+	Symbol* variable1 = SymbolList::getInstance()->getSymbol(expr1VarName);
+	Symbol* variable2 = SymbolList::getInstance()->getSymbol(expr2VarName);
+	
+	if (variable1 != nullptr)
+	{
+		cout << "	movl	" << variable1->memoryAddress << "(%rbp), %eax \n";
 	}
-	else
-	{ // Subtraction
-		cout << "	subl	" << SymbolList::getInstance()->getSymbol(expr2VarName)->memoryAddress << "(%rbp), %eax \n";
+	if (variable2 != nullptr)
+	{
+		if (oper == "+")
+		{ // Addition
+			cout << "	addl	" << variable2->memoryAddress << "(%rbp), %eax \n";
+		}
+		else
+		{ // Subtraction
+			cout << "	subl	" << variable2->memoryAddress << "(%rbp), %eax \n";
+		}
 	}
 
 	//variableToMemoryMap[tempVariableName] = variableToMemoryMap.size() + 1;
 	Symbol symbolAdded = SymbolList::getInstance()->addTemporaryVariable();
 	//int tempVariableAddress = variableToMemoryMap[tempVariableName] * -4;
 	cout << "	movl	%eax, " << symbolAdded.memoryAddress << "(%rbp) \n";
-
 
 	return symbolAdded.symbolName;
 }
@@ -134,19 +141,23 @@ std::any CodeGenVisitor::visitMultdiv(ifccParser::MultdivContext *ctx)
 	string expr2VarName = any_cast<string>(visit(ctx->expr(1)));
 
 //TODO gérer si variable n'est pas déclarée !!!!!!!!!!!!!!
-	int variable1Address = variableToMemoryMap[expr1VarName] * -4;
-	int variable2Address = variableToMemoryMap[expr2VarName] * -4;
-	if (oper == "*")
-	{ // Multiplication
-		cout << "	imull	" << variable2Address << "(%rbp), %eax \n";
-	}
-	else
-	{ // Division
-		cout << "	idiv	" << variable2Address << "(%rbp), %eax \n";
-	}
+	Symbol* variable1 = SymbolList::getInstance()->getSymbol(expr1VarName);
+	Symbol* variable2 = SymbolList::getInstance()->getSymbol(expr2VarName);
 
-		Symbol symbolAdded = SymbolList::getInstance()->addTemporaryVariable();
-
+	//int variable1Address = variableToMemoryMap[expr1VarName] * -4;
+	//int variable2Address = variableToMemoryMap[expr2VarName] * -4;
+	if (variable2 != nullptr)
+	{
+		if (oper == "*")
+		{ // Multiplication
+			cout << "	imull	" << variable2->memoryAddress << "(%rbp), %eax \n";
+		}
+		else
+		{ // Division
+			cout << "	idiv	" << variable2->memoryAddress << "(%rbp), %eax \n";
+		}
+	}
+	Symbol symbolAdded = SymbolList::getInstance()->addTemporaryVariable();
 	cout << "	movl	%eax, " << symbolAdded.memoryAddress << "(%rbp) \n";
 
 	return symbolAdded.symbolName;
