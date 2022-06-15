@@ -60,3 +60,11 @@ Finally, it also makes the following verifications :
 * If-then-else
 * For and while loops
 * Function calls
+
+# Our team members
+* [Nikita TEREKHOV](https://github.com/neeeekitos)
+* [Louise PIETROPAOLI](https://github.com/LouisePietropaoli)
+* [Laetitia GETTI](https://github.com/lgetti)
+* [Gaëlle FERREIRA](https://github.com/Galiixy)
+* [Lina ZOUIRI](https://github.com/nzlar)
+* [Yanis MANSOUR](https://github.com/yanismnsr) 
