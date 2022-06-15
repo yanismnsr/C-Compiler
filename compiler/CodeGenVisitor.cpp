@@ -180,10 +180,11 @@ std::any CodeGenVisitor::visitUnaryExpression(ifccParser::UnaryExpressionContext
 	}
 }
 
+
 std::any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 {
 	string variableName = ctx->IDENTIFIER()->getText();
-	string rValue = any_cast<string>(visit(ctx->expr()));
+	string rValueVariableName = any_cast<string>(visit(ctx->expr()));
 
 	int lValueAddress = SymbolList::getInstance()->getSymbol(variableName)->memoryAddress;
 	int rValueAddress = SymbolList::getInstance()->getSymbol(rValue)->memoryAddress;
