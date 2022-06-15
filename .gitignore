@@ -4,3 +4,4 @@ compiler/Expr.g4
 garbage/*.o
 tests/ifcc-test-output
 compiler/ifcc
+.vscode/
