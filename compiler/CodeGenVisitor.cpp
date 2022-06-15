@@ -1,6 +1,7 @@
 #include "CodeGenVisitor.h"
 #include "antlr4-runtime.h"
 #include "./generated/ifccVisitor.h"
+#include "./SymbolList.h"
 #include <iostream>
 #include <map>
 #include <any>
@@ -41,6 +42,8 @@ std::any CodeGenVisitor::visitProgEnd(ifccParser::ProgEndContext *ctx)
 			 << "   popq	%rbp\n"
 			 << " 	retq\n";
 	}
+
+	//TODO check les variables used --> mais à mettre apres le visitChildren 
 	return visitChildren(ctx);
 }
 
@@ -58,14 +61,13 @@ std::any CodeGenVisitor::visitReturn(ifccParser::ReturnContext *ctx)
 	this->returnPresent = true;
 	if (variable != nullptr)
 	{
-
-		if (variableToMemoryMap.find(variable->getText()) == variableToMemoryMap.end())
+		if (SymbolList::getInstance()->getSymbol(variable->getText()) == nullptr)
 		{
 			throw std::runtime_error("Variable " + variable->getText() + " not declared");
 		}
 
-		int variableAddress = (variableToMemoryMap[variable->getText()]) * -4;
-		cout << " 	movl	" << variableAddress << "(%rbp), %eax\n";
+		int variableAddress = SymbolList::getInstance()->getSymbol(variable->getText())->memoryAddress;
+		cout << " 	movl	" << SymbolList::getInstance()->getSymbol(variable->getText())->memoryAddress << "(%rbp), %eax\n";
 	}
 	else if (constant != nullptr)
 	{
@@ -83,15 +85,16 @@ std::any CodeGenVisitor::visitDeclaration(ifccParser::DeclarationContext *ctx)
 	std::vector<antlr4::tree::TerminalNode *> variables = ctx->IDENTIFIER();
 	for (auto variable : variables)
 	{
-		if (variableToMemoryMap.find(variable->getText()) == variableToMemoryMap.end())
+		string variableName = variable->getText();
+/* 		if (variableToMemoryMap.find(variable->getText()) == variableToMemoryMap.end())
 		{
-			string variableName = variable->getText();
 			variableToMemoryMap[variableName] = variableToMemoryMap.size() + 1;
 		}
 		else
 		{
-			// TODO throw an error
-		}
+				writeWarning("Variable " + variableName + " already exists.");
+		} */
+		SymbolList::getInstance()->addVariable(variableName);
 	}
 	return visitChildren(ctx);
 }
@@ -102,22 +105,24 @@ std::any CodeGenVisitor::visitAddmin(ifccParser::AddminContext *ctx)
 	string expr1VarName = any_cast<string>(visit(ctx->expr(0)));
 	string expr2VarName = any_cast<string>(visit(ctx->expr(1)));
 
-	int variable1Address = variableToMemoryMap[expr1VarName] * -4;
-	int variable2Address = variableToMemoryMap[expr2VarName] * -4;
-	cout << "	movl	" << variable1Address << "(%rbp), %eax \n";
+//	int variable1Address = variableToMemoryMap[expr1VarName] * -4;
+//	int variable2Address = variableToMemoryMap[expr2VarName] * -4;
+	cout << "	movl	" << SymbolList::getInstance()->getSymbol(expr1VarName)->memoryAddress << "(%rbp), %eax \n";
 	if (oper == "+")
 	{ // Addition
-		cout << "	addl	" << variable2Address << "(%rbp), %eax \n";
+		cout << "	addl	" << SymbolList::getInstance()->getSymbol(expr2VarName)->memoryAddress << "(%rbp), %eax \n";
 	}
 	else
 	{ // Subtraction
-		cout << "	subl	" << variable2Address << "(%rbp), %eax \n";
+		cout << "	subl	" << SymbolList::getInstance()->getSymbol(expr2VarName)->memoryAddress << "(%rbp), %eax \n";
 	}
 
 	string tempVariableName = "#tmp" + to_string(++this->nbTemporaryVariable);
-	variableToMemoryMap[tempVariableName] = variableToMemoryMap.size() + 1;
-	int tempVariableAddress = variableToMemoryMap[tempVariableName] * -4;
-	cout << "	movl	%eax, " << tempVariableAddress << "(%rbp) \n";
+	//variableToMemoryMap[tempVariableName] = variableToMemoryMap.size() + 1;
+	Symbol symbolAdded = SymbolList::getInstance()->addVariable(tempVariableName);
+	//int tempVariableAddress = variableToMemoryMap[tempVariableName] * -4;
+	cout << "	movl	%eax, " << symbolAdded.memoryAddress << "(%rbp) \n";
+
 
 	return tempVariableName;
 }
@@ -192,6 +197,14 @@ std::any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 
 	return 0;
 }
+
+void CodeGenVisitor::writeWarning(string message)
+{
+	warningsFile.open(WARNING_FILE_RELATIVE_PATH_2);
+	warningsFile << message << endl;
+	warningsFile.close();
+}
+
 
 // std::any CodeGenVisitor::visitVarvar(ifccParser::VarvarContext *ctx)
 // {

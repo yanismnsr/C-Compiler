@@ -5,10 +5,11 @@
 
 #include "antlr4-runtime.h"
 #include "generated/ifccBaseVisitor.h"
+#include "SymbolList.h"
 
 using namespace std;
 
-const string WARNING_FILE_RELATIVE_PATH = "warnings.txt";
+const string WARNING_FILE_RELATIVE_PATH_2 = "warnings.txt";
 
 
 class CodeGenVisitor : public ifccBaseVisitor {
@@ -17,6 +18,8 @@ private:
 	bool returnPresent = false;
 	int nbTemporaryVariable = 0;
 	ofstream warningsFile;
+	void writeWarning(string message);
+
 
 public:
 	// virtual std::any visitProg(ifccParser::ProgContext *ctx) override;
@@ -44,7 +47,6 @@ public:
 	virtual std::any visitExprIdentifier(ifccParser::ExprIdentifierContext *ctx) override;
 
 	virtual std::any visitAffectation(ifccParser::AffectationContext *ctx) override;
-
 };
 
 // virtual std::any visitDeclareVar(ifccParser::DeclareVarContext *ctx) override ;
