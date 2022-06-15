@@ -2,8 +2,8 @@
 
 This is a C compiler, inspired by gcc. For now, If generates X86 assembly code. ARM assembly support is coming soon.
 
-## Usage
-First, clone the project : 
+## Compile the project
+### Clone 
 SSH : 
 ```bash
 git clone git@github.com:yanismnsr/C-Compiler.git
@@ -13,25 +13,47 @@ HTTPS :
 git clone https://github.com/yanismnsr/C-Compiler
 ```
 
-Change the directory to the project :
+### Compile
+Go to the compiler directory
 ```bash
 cd C-Compiler/compiler
 ```
 
-Compile the project : 
-### M1 MacOS
+#### Apple Silicon
 ```bash
 ./runmake_M1.sh
 ```
 
-### Ubuntu
+#### Ubuntu
 ```bash
 ./runmake_ubuntu.sh
 ```
 
-### Fedora
+#### Fedora
 ```bash
 ./runmake_fedora.sh
+```
+
+## Usage
+Always in the "compiler" directory : 
+```bash
+./ifcc <path to your program>
+```
+
+This will show the assembly directly on the console.
+
+If you with to put the output in a file, simply redirect the standard output in bash :
+```bash
+./ifcc <path to your program> > executable
+```
+
+## Run tests
+A list of test scenarios are already written in the directory `tests/testfiles` of the project. To run them, run the following commands : 
+
+:warning: **If you are on Apple Silicon**: make sure you have rosetta2 and run your terminal on X86 mode. Alternatively, you can run `arch -x86_64 zsh` to open a terminal in X86 architecture.
+```bash
+cd tests
+./ifcc-test.py testfiles
 ```
 
 ## Features 
