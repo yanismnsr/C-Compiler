@@ -8,11 +8,6 @@
 
 using namespace std;
 
-// {
-// 	// int retval = stoi(ctx->CONST()->getText());
-// 	return visitChildren(ctx);
-// }
-
 std::any CodeGenVisitor::visitProgBegin(ifccParser::ProgBeginContext *ctx)
 {
 	// detect and adapt for MAC_OS specificity
@@ -44,38 +39,19 @@ std::any CodeGenVisitor::visitProgEnd(ifccParser::ProgEndContext *ctx)
 	}
 
 	//TODO check les variables used --> mais à mettre apres le visitChildren 
+	//TODO throw une erreur si hasError true
 	return visitChildren(ctx);
 }
 
-// std::any CodeGenVisitor::visitRetConst(ifccParser::RetConstContext *ctx)
-// {
-// 	int constantValue = stoi(ctx->CONST()->getText());
-// 	cout << " 	movl	$" << constantValue << ", %eax\n";
-// 	return visitChildren(ctx);
-// }
-
 std::any CodeGenVisitor::visitReturn(ifccParser::ReturnContext *ctx)
 {
-	antlr4::tree::TerminalNode *variable = ctx->IDENTIFIER();
-	antlr4::tree::TerminalNode *constant = ctx->CONST();
+	string exprVarName = any_cast<string>(visit(ctx->expr()));
+	Symbol* symbol = SymbolList::getInstance()->getSymbol(exprVarName);
 	this->returnPresent = true;
-	if (variable != nullptr)
+	if (symbol != nullptr)
 	{
-		if (SymbolList::getInstance()->getSymbol(variable->getText()) == nullptr)
-		{
-			throw std::runtime_error("Variable \'" + variable->getText() + "\' was not declared");
-		}
-
-		int variableAddress = SymbolList::getInstance()->getSymbol(variable->getText())->memoryAddress;
-		cout << " 	movl	" << SymbolList::getInstance()->getSymbol(variable->getText())->memoryAddress << "(%rbp), %eax\n";
-	}
-	else if (constant != nullptr)
-	{
-		int constantValue = stoi(constant->getText());
-		cout << " 	movl	$" << constantValue << ", %eax\n";
-	}
-	else
-	{
+		int variableAddress = SymbolList::getInstance()->getSymbol(exprVarName)->memoryAddress;
+		cout << " 	movl	" << symbol->memoryAddress << "(%rbp), %eax\n";
 	}
 	return visitChildren(ctx);
 }
@@ -86,14 +62,6 @@ std::any CodeGenVisitor::visitDeclaration(ifccParser::DeclarationContext *ctx)
 	for (auto variable : variables)
 	{
 		string variableName = variable->getText();
-/* 		if (variableToMemoryMap.find(variable->getText()) == variableToMemoryMap.end())
-		{
-			variableToMemoryMap[variableName] = variableToMemoryMap.size() + 1;
-		}
-		else
-		{
-				writeWarning("Variable " + variableName + " already exists.");
-		} */
 		SymbolList::getInstance()->addVariable(variableName);
 	}
 	return visitChildren(ctx);
@@ -104,9 +72,6 @@ std::any CodeGenVisitor::visitAddmin(ifccParser::AddminContext *ctx)
 	string oper = ctx->op->getText();
 	string expr1VarName = any_cast<string>(visit(ctx->expr(0)));
 	string expr2VarName = any_cast<string>(visit(ctx->expr(1)));
-
-//	int variable1Address = variableToMemoryMap[expr1VarName] * -4;
-//	int variable2Address = variableToMemoryMap[expr2VarName] * -4;
 	Symbol* variable1 = SymbolList::getInstance()->getSymbol(expr1VarName);
 	Symbol* variable2 = SymbolList::getInstance()->getSymbol(expr2VarName);
 	
@@ -125,13 +90,10 @@ std::any CodeGenVisitor::visitAddmin(ifccParser::AddminContext *ctx)
 			cout << "	subl	" << variable2->memoryAddress << "(%rbp), %eax \n";
 		}
 	}
+	Symbol temporarySymbolAdded = SymbolList::getInstance()->addTemporaryVariable();
+	cout << "	movl	%eax, " << temporarySymbolAdded.memoryAddress << "(%rbp) \n";
 
-	//variableToMemoryMap[tempVariableName] = variableToMemoryMap.size() + 1;
-	Symbol symbolAdded = SymbolList::getInstance()->addTemporaryVariable();
-	//int tempVariableAddress = variableToMemoryMap[tempVariableName] * -4;
-	cout << "	movl	%eax, " << symbolAdded.memoryAddress << "(%rbp) \n";
-
-	return symbolAdded.symbolName;
+	return temporarySymbolAdded.symbolName;
 }
 
 std::any CodeGenVisitor::visitMultdiv(ifccParser::MultdivContext *ctx)
@@ -139,28 +101,29 @@ std::any CodeGenVisitor::visitMultdiv(ifccParser::MultdivContext *ctx)
 	string oper = ctx->op->getText();
 	string expr1VarName = any_cast<string>(visit(ctx->expr(0)));
 	string expr2VarName = any_cast<string>(visit(ctx->expr(1)));
-
-//TODO gérer si variable n'est pas déclarée !!!!!!!!!!!!!!
 	Symbol* variable1 = SymbolList::getInstance()->getSymbol(expr1VarName);
 	Symbol* variable2 = SymbolList::getInstance()->getSymbol(expr2VarName);
 
-	//int variable1Address = variableToMemoryMap[expr1VarName] * -4;
-	//int variable2Address = variableToMemoryMap[expr2VarName] * -4;
+	if (variable1 != nullptr)
+	{
+		cout << "	movl	" << variable1->memoryAddress << "(%rbp), %eax		# move operand 1 to eax \n";
+	}
 	if (variable2 != nullptr)
 	{
 		if (oper == "*")
 		{ // Multiplication
-			cout << "	imull	" << variable2->memoryAddress << "(%rbp), %eax \n";
+			cout << "	imull	" << variable2->memoryAddress << "(%rbp), %eax		# apply multiplication \n";
 		}
 		else
 		{ // Division
-			cout << "	idiv	" << variable2->memoryAddress << "(%rbp), %eax \n";
+			cout << "	cltd			# initialize sign register \n";
+			cout << "	idivl	" << variable2->memoryAddress << "(%rbp)		# apply division \n";
 		}
 	}
-	Symbol symbolAdded = SymbolList::getInstance()->addTemporaryVariable();
-	cout << "	movl	%eax, " << symbolAdded.memoryAddress << "(%rbp) \n";
+	Symbol temporarySymbolAdded = SymbolList::getInstance()->addTemporaryVariable();
+	cout << "	movl	%eax, " << temporarySymbolAdded.memoryAddress << "(%rbp) # store expression result in temporary space in the stack \n";
 
-	return symbolAdded.symbolName;
+	return temporarySymbolAdded.symbolName;
 }
 
 std::any CodeGenVisitor::visitExprIdentifier(ifccParser::ExprIdentifierContext *ctx)
@@ -174,22 +137,47 @@ std::any CodeGenVisitor::visitExprConst(ifccParser::ExprConstContext *ctx)
 	int number = stoi(ctx->CONST()->getText());
 
 	// Store constant in a temporary variable in symbol table
-	Symbol symbolAdded = SymbolList::getInstance()->addTemporaryVariable();
+	Symbol temporarySymbolAdded = SymbolList::getInstance()->addTemporaryVariable();
 
 	// Store constant in stack
-	cout << "	movl	$" << number << ", " << symbolAdded.memoryAddress << "(%rbp) \n";
+	cout << "	movl	$" << number << ", " << temporarySymbolAdded.memoryAddress << "(%rbp) 	# Store constant in " << temporarySymbolAdded.memoryAddress << " \n";
 
-	return (string)symbolAdded.symbolName;
+	return (string)temporarySymbolAdded.symbolName;
 }
 
 std::any CodeGenVisitor::visitParenthesis(ifccParser::ParenthesisContext *ctx)
 {
-	return (string) "";
+	return any_cast<string>(visit(ctx->expr()));
 }
 
-std::any CodeGenVisitor::visitUnaryMinus(ifccParser::UnaryMinusContext *ctx)
-{
-	return (string) "";
+std::any CodeGenVisitor::visitUnaryExpression(ifccParser::UnaryExpressionContext *ctx) {
+	string oper = ctx->op->getText();
+
+	string exprVarName = any_cast<string>(visit(ctx->expr()));
+	Symbol* variable1 = SymbolList::getInstance()->getSymbol(exprVarName);
+
+	int variableAddress = variableToMemoryMap[exprVarName] * -4;
+
+	if (oper == "-") {
+
+		// Apply minus
+		cout << "	xorl 	%eax, %eax		# reset eax \n";
+		if (variable1 != nullptr) 
+		{
+			cout << "	subl	" << variable1->memoryAddress << "(%rbp), %eax		# apply minus \n";
+		}
+		// Temporary space in stack
+		Symbol temporarySymbolAdded = SymbolList::getInstance()->addTemporaryVariable();
+
+		// Store result in temporary space in stack
+		cout << "	movl	%eax, " << temporarySymbolAdded.memoryAddress << "(%rbp)		# store result in temporary space in stack \n";
+
+		return (string)temporarySymbolAdded.symbolName;
+
+	} else
+	{
+		return exprVarName;
+	}
 }
 
 std::any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
@@ -200,27 +188,8 @@ std::any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 	int lValueAddress = SymbolList::getInstance()->getSymbol(variableName)->memoryAddress;
 	int rValueAddress = SymbolList::getInstance()->getSymbol(rValue)->memoryAddress;
 
-	cout << "	movl	" << rValueAddress << "(%rbp), %eax \n";
-	cout << "	movl	%eax, " << lValueAddress << "(%rbp) \n";
+	cout << "	movl	" << rValueAddress << "(%rbp), %eax		# retrieve value from temporary space in stack \n";
+	cout << "	movl	%eax, " << lValueAddress << "(%rbp)		# affect to " << variableName << "\n";
 
 	return 0;
 }
-
-
-
-// std::any CodeGenVisitor::visitVarvar(ifccParser::VarvarContext *ctx)
-// {
-// 	return visitChildren(ctx);
-// }
-
-// std::any CodeGenVisitor::visitVarconst(ifccParser::VarconstContext *ctx) {
-// 	int constant = stoi(ctx->CONST()->getText());
-// 	int variableAddress = -(variableToMemoryMap[ctx->IDENTIFIER()->getText()] * 4);
-// 	cout << "	movl	$" << constant << ", " << variableAddress << "(%rbp) \n";
-// 	return visitChildren(ctx);
-// }
-
-// std::any CodeGenVisitor::visitDeclareVar(ifccParser::DeclareVarContext *ctx) {
-// 	cout << "declare var";
-//     return visitChildren(ctx);
-//   }

@@ -38,13 +38,14 @@ public:
 
 	virtual std::any visitParenthesis(ifccParser::ParenthesisContext *ctx) override;
 
-	virtual std::any visitUnaryMinus(ifccParser::UnaryMinusContext *ctx) override;
-
 	virtual std::any visitExprConst(ifccParser::ExprConstContext *ctx) override;
 
 	virtual std::any visitExprIdentifier(ifccParser::ExprIdentifierContext *ctx) override;
 
 	virtual std::any visitAffectation(ifccParser::AffectationContext *ctx) override;
+
+	virtual std::any visitUnaryExpression(ifccParser::UnaryExpressionContext *ctx) override;
+
 };
 
 // virtual std::any visitDeclareVar(ifccParser::DeclareVarContext *ctx) override ;
