@@ -155,5 +155,4 @@ class CFG {
 	vector <BasicBlock*> bbs; /**< all the basic blocks of this CFG*/
 };
 
-
 #endif
