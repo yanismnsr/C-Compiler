@@ -107,6 +107,7 @@ std::any CodeGenVisitor::visitAddmin(ifccParser::AddminContext *ctx)
 
 //	int variable1Address = variableToMemoryMap[expr1VarName] * -4;
 //	int variable2Address = variableToMemoryMap[expr2VarName] * -4;
+//TODO gérer si variable n'est pas déclarée !!!!!!!!!!!!!!
 	cout << "	movl	" << SymbolList::getInstance()->getSymbol(expr1VarName)->memoryAddress << "(%rbp), %eax \n";
 	if (oper == "+")
 	{ // Addition
@@ -117,14 +118,13 @@ std::any CodeGenVisitor::visitAddmin(ifccParser::AddminContext *ctx)
 		cout << "	subl	" << SymbolList::getInstance()->getSymbol(expr2VarName)->memoryAddress << "(%rbp), %eax \n";
 	}
 
-	string tempVariableName = "#tmp" + to_string(++this->nbTemporaryVariable);
 	//variableToMemoryMap[tempVariableName] = variableToMemoryMap.size() + 1;
-	Symbol symbolAdded = SymbolList::getInstance()->addVariable(tempVariableName);
+	Symbol symbolAdded = SymbolList::getInstance()->addTemporaryVariable();
 	//int tempVariableAddress = variableToMemoryMap[tempVariableName] * -4;
 	cout << "	movl	%eax, " << symbolAdded.memoryAddress << "(%rbp) \n";
 
 
-	return tempVariableName;
+	return symbolAdded.symbolName;
 }
 
 std::any CodeGenVisitor::visitMultdiv(ifccParser::MultdivContext *ctx)
@@ -133,6 +133,7 @@ std::any CodeGenVisitor::visitMultdiv(ifccParser::MultdivContext *ctx)
 	string expr1VarName = any_cast<string>(visit(ctx->expr(0)));
 	string expr2VarName = any_cast<string>(visit(ctx->expr(1)));
 
+//TODO gérer si variable n'est pas déclarée !!!!!!!!!!!!!!
 	int variable1Address = variableToMemoryMap[expr1VarName] * -4;
 	int variable2Address = variableToMemoryMap[expr2VarName] * -4;
 	if (oper == "*")
@@ -144,12 +145,11 @@ std::any CodeGenVisitor::visitMultdiv(ifccParser::MultdivContext *ctx)
 		cout << "	idiv	" << variable2Address << "(%rbp), %eax \n";
 	}
 
-	string tempVariableName = "#tmp" + to_string(++this->nbTemporaryVariable);
-	variableToMemoryMap[tempVariableName] = variableToMemoryMap.size() + 1;
-	int tempVariableAddress = variableToMemoryMap[tempVariableName] * -4;
-	cout << "	movl	%eax, " << tempVariableAddress << "(%rbp) \n";
+		Symbol symbolAdded = SymbolList::getInstance()->addTemporaryVariable();
 
-	return tempVariableName;
+	cout << "	movl	%eax, " << symbolAdded.memoryAddress << "(%rbp) \n";
+
+	return symbolAdded.symbolName;
 }
 
 std::any CodeGenVisitor::visitExprIdentifier(ifccParser::ExprIdentifierContext *ctx)
@@ -163,15 +163,12 @@ std::any CodeGenVisitor::visitExprConst(ifccParser::ExprConstContext *ctx)
 	int number = stoi(ctx->CONST()->getText());
 
 	// Store constant in a temporary variable in symbol table
-	string temporaryVariableName = "#tmp" + to_string(this->nbTemporaryVariable);
-	this->variableToMemoryMap[temporaryVariableName] = this->variableToMemoryMap.size() + 1;
-	this->nbTemporaryVariable++;
+	Symbol symbolAdded = SymbolList::getInstance()->addTemporaryVariable();
 
 	// Store constant in stack
-	int variableAddress = this->variableToMemoryMap[temporaryVariableName] * -4;
-	cout << "	movl	$" << number << ", " << variableAddress << "(%rbp) \n";
+	cout << "	movl	$" << number << ", " << symbolAdded.memoryAddress << "(%rbp) \n";
 
-	return (string)temporaryVariableName;
+	return (string)symbolAdded.symbolName;
 }
 
 std::any CodeGenVisitor::visitParenthesis(ifccParser::ParenthesisContext *ctx)
@@ -189,8 +186,8 @@ std::any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 	string variableName = ctx->IDENTIFIER()->getText();
 	string rValue = any_cast<string>(visit(ctx->expr()));
 
-	int lValueAddress = variableToMemoryMap[variableName] * -4;
-	int rValueAddress = variableToMemoryMap[rValue] * -4;
+	int lValueAddress = SymbolList::getInstance()->getSymbol(variableName)->memoryAddress;
+	int rValueAddress = SymbolList::getInstance()->getSymbol(rValue)->memoryAddress;
 
 	cout << "	movl	" << rValueAddress << "(%rbp), %eax \n";
 	cout << "	movl	%eax, " << lValueAddress << "(%rbp) \n";
@@ -198,12 +195,6 @@ std::any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 	return 0;
 }
 
-void CodeGenVisitor::writeWarning(string message)
-{
-	warningsFile.open(WARNING_FILE_RELATIVE_PATH_2);
-	warningsFile << message << endl;
-	warningsFile.close();
-}
 
 
 // std::any CodeGenVisitor::visitVarvar(ifccParser::VarvarContext *ctx)

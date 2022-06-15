@@ -21,14 +21,21 @@ Symbol& SymbolList::addVariable(string variableName)
 {
 	if (variableToMemoryMap.find(variableName) == variableToMemoryMap.end())
 	{
-		variableToMemoryMap[variableName] = new Symbol((variableToMemoryMap.size() + 1) * -4, false);
+		variableToMemoryMap[variableName] = new Symbol((variableToMemoryMap.size() + 1) * -4, false, variableName);
 	}
 	else
 	{
-		writeWarning("Variable " + variableName + " already exists.");
+		writeWarning("Variable \'" + variableName + "\' already exists.");
 	}
 
 	return *(variableToMemoryMap[variableName]);
+}
+
+Symbol& SymbolList::addTemporaryVariable()
+{
+	string temporaryVariableName = "#tmp" + to_string(++nbTemporaryVariables);
+	variableToMemoryMap[temporaryVariableName] = new Symbol((variableToMemoryMap.size() + 1) * -4, false, temporaryVariableName);
+	return *(variableToMemoryMap[temporaryVariableName]);
 }
 
 Symbol* SymbolList::getSymbol(string variableName)

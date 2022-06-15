@@ -17,8 +17,6 @@ private:
 	map<string, int> variableToMemoryMap;
 	bool returnPresent = false;
 	int nbTemporaryVariable = 0;
-	ofstream warningsFile;
-	void writeWarning(string message);
 
 
 public:

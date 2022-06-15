@@ -12,7 +12,8 @@ typedef struct Symbol
 {
     int memoryAddress;
 	bool isUsed;
-	Symbol(int memAdd, bool used): memoryAddress(memAdd), isUsed(used) {}
+	string symbolName;
+	Symbol(int memAdd, bool used, string name = ""): memoryAddress(memAdd), isUsed(used), symbolName(name) {}
 } Symbol;
 
 class SymbolList {
@@ -23,11 +24,14 @@ private:
     SymbolList(const SymbolList& symbolList) = delete;
 
 	map<string, Symbol*> variableToMemoryMap;
-	void writeWarning(string message);
+	int nbTemporaryVariables = 0;
 	ofstream warningsFile;
+
+	void writeWarning(string message);
 public:
 	static SymbolList* getInstance();
 	Symbol& addVariable(string address);
+	Symbol& addTemporaryVariable();
 	Symbol* getSymbol(string variableName);
 };
 
