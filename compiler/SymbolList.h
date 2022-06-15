@@ -25,6 +25,7 @@ private:
 
 	map<string, Symbol*> variableToMemoryMap;
 	int nbTemporaryVariables = 0;
+	bool hasError = false;
 	ofstream warningsFile;
 
 	void writeWarning(string message);
@@ -33,5 +34,6 @@ public:
 	Symbol& addVariable(string address);
 	Symbol& addTemporaryVariable();
 	Symbol* getSymbol(string variableName);
+	bool getHasError();
 };
 

@@ -40,6 +40,10 @@ std::any CodeGenVisitor::visitProgEnd(ifccParser::ProgEndContext *ctx)
 
 	//TODO check les variables used --> mais à mettre apres le visitChildren 
 	//TODO throw une erreur si hasError true
+	if (SymbolList::getInstance()->getHasError()) 
+	{
+		throw std::runtime_error("");
+	}
 	return visitChildren(ctx);
 }
 
@@ -187,7 +191,7 @@ std::any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 	string rValueVariableName = any_cast<string>(visit(ctx->expr()));
 
 	int lValueAddress = SymbolList::getInstance()->getSymbol(variableName)->memoryAddress;
-	int rValueAddress = SymbolList::getInstance()->getSymbol(rValue)->memoryAddress;
+	int rValueAddress = SymbolList::getInstance()->getSymbol(rValueVariableName)->memoryAddress;
 
 	cout << "	movl	" << rValueAddress << "(%rbp), %eax		# retrieve value from temporary space in stack \n";
 	cout << "	movl	%eax, " << lValueAddress << "(%rbp)		# affect to " << variableName << "\n";

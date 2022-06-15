@@ -25,7 +25,8 @@ Symbol& SymbolList::addVariable(string variableName)
 	}
 	else
 	{
-		writeWarning("Variable \'" + variableName + "\' already exists.");
+		cerr << "Variable \'" + variableName + "\' already exists." << endl;
+		hasError = true;
 	}
 
 	return *(variableToMemoryMap[variableName]);
@@ -44,9 +45,13 @@ Symbol* SymbolList::getSymbol(string variableName)
 	if (symbol == nullptr) 
 	{
 		cerr << "Variable \'" + variableName + "\' was not declared" << endl;
+		hasError = true;
 	}
 	return symbol;
 }
+
+bool SymbolList::getHasError() { return hasError; }
+
 
 SymbolList* SymbolList::getInstance()
 {
