@@ -29,11 +29,13 @@ private:
 	ofstream warningsFile;
 
 	void writeWarning(string message);
+	void cleanWarningsFile();
 public:
 	static SymbolList* getInstance();
 	Symbol& addVariable(string address);
 	Symbol& addTemporaryVariable();
 	Symbol* getSymbol(string variableName);
 	bool getHasError();
+	void checkAreAllDeclaredVariablesAreUsed();
 };
 

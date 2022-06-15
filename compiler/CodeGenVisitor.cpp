@@ -38,7 +38,7 @@ std::any CodeGenVisitor::visitProgEnd(ifccParser::ProgEndContext *ctx)
 			 << " 	retq\n";
 	}
 
-	//TODO check les variables used --> mais à mettre apres le visitChildren 
+	SymbolList::getInstance()->checkAreAllDeclaredVariablesAreUsed();
 	//TODO throw une erreur si hasError true
 	if (SymbolList::getInstance()->getHasError()) 
 	{

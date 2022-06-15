@@ -8,11 +8,21 @@ using namespace std;
 
 SymbolList* SymbolList::symbolListInstance = nullptr;
 
-SymbolList::SymbolList() {}
+SymbolList::SymbolList() 
+{
+	cleanWarningsFile();
+}
+
+void SymbolList::cleanWarningsFile()
+{
+	warningsFile.open(WARNING_FILE_RELATIVE_PATH);
+	warningsFile << "";
+	warningsFile.close();
+}
 
 void SymbolList::writeWarning(string message)
 {
-	warningsFile.open(WARNING_FILE_RELATIVE_PATH);
+	warningsFile.open(WARNING_FILE_RELATIVE_PATH, std::ios_base::app);
 	warningsFile << message << endl;
 	warningsFile.close();
 }
@@ -35,7 +45,7 @@ Symbol& SymbolList::addVariable(string variableName)
 Symbol& SymbolList::addTemporaryVariable()
 {
 	string temporaryVariableName = "#tmp" + to_string(++nbTemporaryVariables);
-	variableToMemoryMap[temporaryVariableName] = new Symbol((variableToMemoryMap.size() + 1) * -4, false, temporaryVariableName);
+	variableToMemoryMap[temporaryVariableName] = new Symbol((variableToMemoryMap.size() + 1) * -4, true, temporaryVariableName);
 	return *(variableToMemoryMap[temporaryVariableName]);
 }
 
@@ -60,3 +70,15 @@ SymbolList* SymbolList::getInstance()
       
         return symbolListInstance;
 }
+
+void SymbolList::checkAreAllDeclaredVariablesAreUsed()
+{
+	for (auto variable : variableToMemoryMap)
+	{
+		if (!variable.second->isUsed) 
+		{
+			writeWarning("Variable \'" + variable.first + "\' is declared but never used.\n");
+		}
+	}
+}
+
