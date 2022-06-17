@@ -39,7 +39,6 @@ std::any CodeGenVisitor::visitProgEnd(ifccParser::ProgEndContext *ctx)
 	}
 
 	SymbolList::getInstance()->checkAreAllDeclaredVariablesUsedAndInitialized();
-	//TODO throw une erreur si hasError true
 	if (SymbolList::getInstance()->getHasError()) 
 	{
 		throw std::runtime_error("");
@@ -61,13 +60,22 @@ std::any CodeGenVisitor::visitReturn(ifccParser::ReturnContext *ctx)
 }
 
 std::any CodeGenVisitor::visitDeclaration(ifccParser::DeclarationContext *ctx)
-{
-	std::vector<antlr4::tree::TerminalNode *> variables = ctx->IDENTIFIER();
-	for (auto variable : variables)
+{	
+	std::vector<antlr4::tree::TerminalNode *> onlyDeclarations = ctx->IDENTIFIER();
+	std::vector<ifccParser::AffectationContext *> declarationsWithAffectations = ctx->affectation();
+	for (auto onlyDeclaration : onlyDeclarations)
 	{
-		string variableName = variable->getText();
+		string variableName = onlyDeclaration->getText();
 		SymbolList::getInstance()->addVariable(variableName);
 	}
+
+	for (auto declarationWithAffectation : declarationsWithAffectations)
+	{
+		string variableName = declarationWithAffectation->IDENTIFIER()->getText();
+		SymbolList::getInstance()->addVariable(variableName);
+		visit(declarationWithAffectation);
+	}
+
 	return visitChildren(ctx);
 }
 
