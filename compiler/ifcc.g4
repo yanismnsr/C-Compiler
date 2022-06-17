@@ -15,7 +15,7 @@ return :
     RETURN expr? ;
 
 declaration : 
-    type IDENTIFIER (',' IDENTIFIER)*
+    type (IDENTIFIER | affectation) (',' (IDENTIFIER | affectation))*
     ;
 
 affectation : 
