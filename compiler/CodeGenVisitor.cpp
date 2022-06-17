@@ -38,7 +38,7 @@ std::any CodeGenVisitor::visitProgEnd(ifccParser::ProgEndContext *ctx)
 			 << " 	retq\n";
 	}
 
-	SymbolList::getInstance()->checkAreAllDeclaredVariablesAreUsed();
+	SymbolList::getInstance()->checkAreAllDeclaredVariablesUsedAndInitialized();
 	//TODO throw une erreur si hasError true
 	if (SymbolList::getInstance()->getHasError()) 
 	{
@@ -195,6 +195,7 @@ std::any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 
 	cout << "	movl	" << rValueAddress << "(%rbp), %eax		# retrieve value from temporary space in stack \n";
 	cout << "	movl	%eax, " << lValueAddress << "(%rbp)		# affect to " << variableName << "\n";
+	SymbolList::getInstance()->setVariableIsInitialized(variableName, true);
 
 	return 0;
 }

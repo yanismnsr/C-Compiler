@@ -31,7 +31,7 @@ Symbol& SymbolList::addVariable(string variableName)
 {
 	if (variableToMemoryMap.find(variableName) == variableToMemoryMap.end())
 	{
-		variableToMemoryMap[variableName] = new Symbol((variableToMemoryMap.size() + 1) * -4, false, variableName);
+		variableToMemoryMap[variableName] = new Symbol((variableToMemoryMap.size() + 1) * -4, false, false, false, variableName);
 	}
 	else
 	{
@@ -45,7 +45,7 @@ Symbol& SymbolList::addVariable(string variableName)
 Symbol& SymbolList::addTemporaryVariable()
 {
 	string temporaryVariableName = "#tmp" + to_string(++nbTemporaryVariables);
-	variableToMemoryMap[temporaryVariableName] = new Symbol((variableToMemoryMap.size() + 1) * -4, true, temporaryVariableName);
+	variableToMemoryMap[temporaryVariableName] = new Symbol((variableToMemoryMap.size() + 1) * -4, true, true, true, temporaryVariableName);
 	return *(variableToMemoryMap[temporaryVariableName]);
 }
 
@@ -56,6 +56,9 @@ Symbol* SymbolList::getSymbol(string variableName)
 	{
 		cerr << "Variable \'" + variableName + "\' was not declared" << endl;
 		hasError = true;
+	} else 
+	{
+		symbol->isUsed = true;
 	}
 	return symbol;
 }
@@ -71,14 +74,31 @@ SymbolList* SymbolList::getInstance()
         return symbolListInstance;
 }
 
-void SymbolList::checkAreAllDeclaredVariablesAreUsed()
+void SymbolList::checkAreAllDeclaredVariablesUsedAndInitialized()
 {
 	for (auto variable : variableToMemoryMap)
 	{
-		if (!variable.second->isUsed) 
+		if (!variable.second->isTemporary)
 		{
-			writeWarning("Variable \'" + variable.first + "\' is declared but never used.\n");
+			if (!variable.second->isUsed) 
+			{
+				writeWarning("Variable \'" + variable.first + "\' is declared but never used.\n");
+			}
+			if (!variable.second->isInitialized) 
+			{
+				writeWarning("Variable \'" + variable.first + "\' is not initialized.\n");
+			}
 		}
 	}
 }
+
+void SymbolList::setVariableIsInitialized(string variableName, bool isInitialized) 
+{
+	Symbol* symbol = variableToMemoryMap.find(variableName) == variableToMemoryMap.end() ? nullptr : variableToMemoryMap.find(variableName)->second;
+	if (symbol != nullptr) 
+	{
+		variableToMemoryMap.find(variableName)->second->isInitialized = isInitialized;
+	}
+}
+
 
