@@ -1,10 +1,11 @@
-
+#include "IR.h"
 using namespace std;
 
 void BasicBlock::add_IRInstr(IRInstr::Operation op, Type t, vector<string> params) {
     instrs.push_back(new IRInstr(this, op, t, params));
 }
 
-// void BasicBlock::gen_asm(ostream &o) {
-    
-// }
+BasicBlock::BasicBlock(CFG* cfg, string entry_label) {
+    this->cfg = cfg;
+    this->label = entry_label;
+}

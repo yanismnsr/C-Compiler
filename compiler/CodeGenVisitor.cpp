@@ -4,6 +4,8 @@
 #include <iostream>
 #include <map>
 #include <any>
+#include "./models/Type.h"
+#include "./IR/IR.h"
 
 using namespace std;
 
@@ -21,35 +23,49 @@ std::any CodeGenVisitor::visitProgBegin(ifccParser::ProgBeginContext *ctx)
 		main = "_main";
 	#endif
 
-	cout << ".globl	" << main << "\n"
-		 << main << ": \n"
-					"	pushq	%rbp\n"
-					"	movq	%rsp, %rbp\n";
+	string bbName = this->cfg.new_BB_name();
+	BasicBlock* bb = new BasicBlock(&this->cfg, main);
+	this->cfg.add_bb(bb);
+
+	PrimitiveType* pt = PrimitiveType::getInstance();
+	Type * voidType = pt->getType("void");
+
+	bb->add_IRInstr(IRInstr::pushq, voidType, {"%bp"});
+	bb->add_IRInstr(IRInstr::copy, voidType, {"%sp", "%bp"});
+
+	// cout << ".globl	" << main << "\n"
+	// 	 << main << ": \n"
+	// 				"	pushq	%rbp\n"
+	// 				"	movq	%rsp, %rbp\n";
 	return visitChildren(ctx);
 }
 
 std::any CodeGenVisitor::visitProgEnd(ifccParser::ProgEndContext *ctx)
 {
+	BasicBlock * bb = new BasicBlock(&this->cfg, "end");
+	this->cfg.add_bb(bb);
+
+	PrimitiveType * pt = PrimitiveType::getInstance();
+	Type * voidType = pt->getType("void");
+
 	if (this->returnPresent)
 	{
-		cout << "   popq	%rbp\n"
-				" 	ret\n";
+		bb->add_IRInstr(IRInstr::popq, voidType, {"%bp"});
+		bb->add_IRInstr(IRInstr::ret, voidType, {});
+		// cout << "   popq	%rbp\n"
+		// 		" 	ret\n";
 	}
 	else
 	{
-		cout << "	xorl	%eax, %eax\n"
-			 << "   popq	%rbp\n"
-			 << " 	retq\n";
+		// bb->add_IRInstr(IRInstr::call, *voidType, {"_exit", "0"});
+		bb->add_IRInstr(IRInstr::popq, voidType, {"%bp"});
+		bb->add_IRInstr(IRInstr::retq, voidType, {});
+		// cout << "	xorl	%eax, %eax\n"
+		// 	 << "   popq	%rbp\n"
+		// 	 << " 	retq\n";
 	}
 	return visitChildren(ctx);
 }
-
-// std::any CodeGenVisitor::visitRetConst(ifccParser::RetConstContext *ctx)
-// {
-// 	int constantValue = stoi(ctx->CONST()->getText());
-// 	cout << " 	movl	$" << constantValue << ", %eax\n";
-// 	return visitChildren(ctx);
-// }
 
 std::any CodeGenVisitor::visitReturn(ifccParser::ReturnContext *ctx)
 {

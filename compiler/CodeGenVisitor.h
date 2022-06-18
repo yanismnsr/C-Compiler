@@ -5,6 +5,7 @@
 
 #include "antlr4-runtime.h"
 #include "generated/ifccBaseVisitor.h"
+#include "./IR/IR.h"
 
 using namespace std;
 
@@ -17,6 +18,7 @@ private:
 	bool returnPresent = false;
 	int nbTemporaryVariable = 0;
 	ofstream warningsFile;
+	CFG cfg;
 
 public:
 

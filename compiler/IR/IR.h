@@ -2,27 +2,21 @@
 #define IR_H
 
 #include <vector>
+#include <map>
 #include <string>
 #include <iostream>
 #include <initializer_list>
-
-// Declarations from the parser -- replace with your own
-#include "type.h"
-#include "symbole.h"
+#include "../Backend/BackendStrategy.h"
+#include "../models/Type.h"
 
 class BasicBlock;
 class CFG;
-class DefFonction;
+
+using namespace std;
 
 /*
-
-
 Exemple de IR.h trouvé sur moodle (peut-être qu'il faut le ranger ailleurs)
-
-
 */
-
-
 
 
 //! The class for one 3-address instruction
@@ -38,23 +32,30 @@ class IRInstr {
 		mul,
 		rmem,
 		wmem,
+		pushq,
+		popq,
 		call, 
 		cmp_eq,
 		cmp_lt,
-		cmp_le
+		cmp_le,
+		ret,
+		retq
 	} Operation;
 
 
 	/**  constructor */
-	IRInstr(BasicBlock* bb_, Operation op, Type t, vector<string> params);
+	IRInstr(BasicBlock* bb_, Operation op, Type *t, vector<string> params);
 	
 	/** Actual code generation */
 	void gen_asm(ostream &o); /**< x86 assembly code generation for this IR instruction */
+
+	const Operation & getOp() const;
+	const vector<string> & getParams() const; 
 	
  private:
 	BasicBlock* bb; /**< The BB this instruction belongs to, which provides a pointer to the CFG this instruction belong to */
 	Operation op;
-	Type t;
+	Type *t;
 	vector<string> params; /**< For 3-op instrs: d, x, y; for ldconst: d, c;  For call: label, d, params;  for wmem and rmem: choose yourself */
 	// if you subclass IRInstr, each IRInstr subclass has its parameters and the previous (very important) comment becomes useless: it would be a better design. 
 };
@@ -95,7 +96,7 @@ class BasicBlock {
 	BasicBlock(CFG* cfg, string entry_label);
 	void gen_asm(ostream &o); /**< x86 assembly code generation for this basic block (very simple) */
 
-	void add_IRInstr(IRInstr::Operation op, Type t, vector<string> params);
+	void add_IRInstr(IRInstr::Operation op, Type * t, vector<string> params);
 
 	// No encapsulation whatsoever here. Feel free to do better.
 	BasicBlock* exit_true;  /**< pointer to the next basic block, true branch. If nullptr, return from procedure */ 
@@ -103,10 +104,9 @@ class BasicBlock {
 	string label; /**< label of the BB, also will be the label in the generated code */
 	CFG* cfg; /** < the CFG where this block belongs */
 	vector<IRInstr*> instrs; /** < the instructions themselves. */
-  string test_var_name;  /** < when generating IR code for an if(expr) or while(expr) etc,
+  	string test_var_name;  /** < when generating IR code for an if(expr) or while(expr) etc,
 													 store here the name of the variable that holds the value of expr */
  protected:
-
  
 };
 
@@ -124,9 +124,7 @@ class BasicBlock {
  */
 class CFG {
  public:
-	CFG(DefFonction* ast);
-
-	DefFonction* ast; /**< The AST this CFG comes from */
+	CFG();
 	
 	void add_bb(BasicBlock* bb); 
 
@@ -137,20 +135,22 @@ class CFG {
 	// void gen_asm_epilogue(ostream& o);
 
 	// symbol table methods
-	void add_to_symbol_table(string name, Type t);
-	string create_new_tempvar(Type t);
+	void add_to_symbol_table(string name, Type *t);
+	string create_new_tempvar(Type * t);
 	int get_var_index(string name);
-	Type get_var_type(string name);
+	Type* get_var_type(string name);
 
 	// basic block management
 	string new_BB_name();
 	BasicBlock* current_bb;
 
  protected:
-	map <string, Type> SymbolType; /**< part of the symbol table  */
+	map <string, Type*> SymbolType; /**< part of the symbol table  */
 	map <string, int> SymbolIndex; /**< part of the symbol table  */
 	int nextFreeSymbolIndex; /**< to allocate new symbols in the symbol table */
 	int nextBBnumber; /**< just for naming */
+
+	BackendStrategy * backend; /**< The assembly generation strategy. Depends on the target architecture */
 	
 	vector <BasicBlock*> bbs; /**< all the basic blocks of this CFG*/
 };
