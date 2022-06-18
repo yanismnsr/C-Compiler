@@ -50,6 +50,7 @@ void generateRetq(const IRInstr & instruction, ostream &o) {
 void generateReturn(const IRInstr & instruction, ostream &o) {
     vector<string> params = instruction.getParams();
     string mappedRegister = X86Strategy::registers[params[0]];
+    
     o << "  movl    " << mappedRegister << ", %eax" << endl;
 }
 

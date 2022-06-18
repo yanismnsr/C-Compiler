@@ -6,10 +6,11 @@
 #include "antlr4-runtime.h"
 #include "generated/ifccBaseVisitor.h"
 #include "./IR/IR.h"
+#include "SymbolList.h"
 
 using namespace std;
 
-const string WARNING_FILE_RELATIVE_PATH = "warnings.txt";
+const string WARNING_FILE_RELATIVE_PATH_2 = "warnings.txt";
 
 
 class CodeGenVisitor : public ifccBaseVisitor {
@@ -17,8 +18,6 @@ private:
 	map<string, int> variableToMemoryMap;
 	bool returnPresent = false;
 	int nbTemporaryVariable = 0;
-	ofstream warningsFile;
-	CFG cfg;
 
 public:
 
@@ -36,13 +35,13 @@ public:
 
 	virtual std::any visitParenthesis(ifccParser::ParenthesisContext *ctx) override;
 
-	virtual std::any visitUnaryExpression(ifccParser::UnaryExpressionContext *ctx) override;
-
 	virtual std::any visitExprConst(ifccParser::ExprConstContext *ctx) override;
 
 	virtual std::any visitExprIdentifier(ifccParser::ExprIdentifierContext *ctx) override;
 
 	virtual std::any visitAffectation(ifccParser::AffectationContext *ctx) override;
+
+	virtual std::any visitUnaryExpression(ifccParser::UnaryExpressionContext *ctx) override;
 
 };
 
