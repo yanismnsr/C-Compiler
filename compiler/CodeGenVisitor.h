@@ -18,8 +18,11 @@ private:
 	map<string, int> variableToMemoryMap;
 	bool returnPresent = false;
 	int nbTemporaryVariable = 0;
+	CFG cfg;
 
 public:
+
+	CodeGenVisitor(BackendStrategy * backendStrategy);
 
 	virtual std::any visitProgBegin(ifccParser::ProgBeginContext *ctx) override;
 
@@ -42,6 +45,8 @@ public:
 	virtual std::any visitAffectation(ifccParser::AffectationContext *ctx) override;
 
 	virtual std::any visitUnaryExpression(ifccParser::UnaryExpressionContext *ctx) override;
+
+	const CFG & getCFG() const;
 
 };
 

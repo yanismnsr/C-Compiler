@@ -10,76 +10,49 @@
 
 using namespace std;
 
+
+CodeGenVisitor::CodeGenVisitor(BackendStrategy * backendStrategy)
+{
+	this->cfg = CFG(backendStrategy);
+}
+
 std::any CodeGenVisitor::visitProgBegin(ifccParser::ProgBeginContext *ctx)
 {
-	// detect and adapt for MAC_OS specificity
-	string main = "main";
-
-	#ifdef __APPLE__
-		main = "_main";
-	#endif
 
 	string bbName = this->cfg.new_BB_name();
-	BasicBlock* bb = new BasicBlock(&this->cfg, main);
+	BasicBlock* bb = new BasicBlock(&this->cfg, "_main");
 	this->cfg.add_bb(bb);
 
-	PrimitiveType* pt = PrimitiveType::getInstance();
-	Type * voidType = pt->getType("void");
-
-	bb->add_IRInstr(IRInstr::pushq, voidType, {"%bp"});
-	bb->add_IRInstr(IRInstr::copy, voidType, {"%sp", "%bp"});
-
-	// cout << ".globl	" << main << "\n"
-	// 	 << main << ": \n"
-	// 				"	pushq	%rbp\n"
-	// 				"	movq	%rsp, %rbp\n";
 	return visitChildren(ctx);
 }
 
 std::any CodeGenVisitor::visitProgEnd(ifccParser::ProgEndContext *ctx)
 {
-	BasicBlock * bb = new BasicBlock(&this->cfg, "end");
-	this->cfg.add_bb(bb);
-
-	PrimitiveType * pt = PrimitiveType::getInstance();
-	Type * voidType = pt->getType("void");
-
-	if (this->returnPresent)
-	{
-		bb->add_IRInstr(IRInstr::popq, voidType, {"%bp"});
-		bb->add_IRInstr(IRInstr::ret, voidType, {});
-		// cout << "   popq	%rbp\n"
-		// 		" 	ret\n";
-	}
-	else
-	{
-		// bb->add_IRInstr(IRInstr::call, *voidType, {"_exit", "0"});
-		bb->add_IRInstr(IRInstr::popq, voidType, {"%bp"});
-		bb->add_IRInstr(IRInstr::retq, voidType, {});
-		// cout << "	xorl	%eax, %eax\n"
-		// 	 << "   popq	%rbp\n"
-		// 	 << " 	retq\n";
-	}
-
-	SymbolList::getInstance()->checkAreAllDeclaredVariablesUsedAndInitialized();
-	if (SymbolList::getInstance()->getHasError()) 
-	{
-		throw std::runtime_error("");
-	}
 	return visitChildren(ctx);
 }
 
 std::any CodeGenVisitor::visitReturn(ifccParser::ReturnContext *ctx)
 {
-	string exprVarName = any_cast<string>(visit(ctx->expr()));
-	Symbol* symbol = SymbolList::getInstance()->getSymbol(exprVarName);
 	this->returnPresent = true;
-	if (symbol != nullptr)
-	{
-		int variableAddress = SymbolList::getInstance()->getSymbol(exprVarName)->memoryAddress;
-		cout << " 	movl	" << symbol->memoryAddress << "(%rbp), %eax\n";
-	}
-	return visitChildren(ctx);
+
+	BasicBlock * bb = this->cfg.current_bb;
+	
+	string exprVarName = any_cast<string>(visit(ctx->expr()));
+
+	// void type
+	PrimitiveType* pt = PrimitiveType::getInstance();
+	Type * voidType = pt->getType("void");
+	bb->add_IRInstr(IRInstr::Operation::returnVar, voidType, {exprVarName});
+
+	// Symbol* symbol = SymbolList::getInstance()->getSymbol(exprVarName);
+	// this->returnPresent = true;
+	// if (symbol != nullptr)
+	// {
+
+	// 	int variableAddress = SymbolList::getInstance()->getSymbol(exprVarName)->memoryAddress;
+	// 	cout << " 	movl	" << symbol->memoryAddress << "(%rbp), %eax\n";
+	// }
+	return 0;
 }
 
 std::any CodeGenVisitor::visitDeclaration(ifccParser::DeclarationContext *ctx)
@@ -110,23 +83,30 @@ std::any CodeGenVisitor::visitAddmin(ifccParser::AddminContext *ctx)
 	Symbol* variable1 = SymbolList::getInstance()->getSymbol(expr1VarName);
 	Symbol* variable2 = SymbolList::getInstance()->getSymbol(expr2VarName);
 	
+	PrimitiveType* pt = PrimitiveType::getInstance();
+	Type * intType = pt->getType("int");
+
 	if (variable1 != nullptr)
 	{
-		cout << "	movl	" << variable1->memoryAddress << "(%rbp), %eax \n";
+		this->cfg.current_bb->add_IRInstr(IRInstr::Operation::rmem, intType, {expr1VarName, "%reg32"});
+		// cout << "	movl	" << variable1->memoryAddress << "(%rbp), %eax \n";
 	}
 	if (variable2 != nullptr)
 	{
 		if (oper == "+")
 		{ // Addition
-			cout << "	addl	" << variable2->memoryAddress << "(%rbp), %eax \n";
+			this->cfg.current_bb->add_IRInstr(IRInstr::Operation::add, intType, {"%reg32", expr2VarName, "%reg32"});
+			// cout << "	addl	" << variable2->memoryAddress << "(%rbp), %eax \n";
 		}
 		else
 		{ // Subtraction
-			cout << "	subl	" << variable2->memoryAddress << "(%rbp), %eax \n";
+			this->cfg.current_bb->add_IRInstr(IRInstr::Operation::sub, intType, {"%reg32", expr2VarName, "%reg32"});
+			// cout << "	subl	" << variable2->memoryAddress << "(%rbp), %eax \n";
 		}
 	}
 	Symbol temporarySymbolAdded = SymbolList::getInstance()->addTemporaryVariable();
-	cout << "	movl	%eax, " << temporarySymbolAdded.memoryAddress << "(%rbp) \n";
+	this->cfg.current_bb->add_IRInstr(IRInstr::Operation::copy, intType, {temporarySymbolAdded.symbolName, "%reg32"});
+	// cout << "	movl	%eax, " << temporarySymbolAdded.memoryAddress << "(%rbp) \n";
 
 	return temporarySymbolAdded.symbolName;
 }
@@ -141,22 +121,22 @@ std::any CodeGenVisitor::visitMultdiv(ifccParser::MultdivContext *ctx)
 
 	if (variable1 != nullptr)
 	{
-		cout << "	movl	" << variable1->memoryAddress << "(%rbp), %eax		# move operand 1 to eax \n";
+		// cout << "	movl	" << variable1->memoryAddress << "(%rbp), %eax		# move operand 1 to eax \n";
 	}
 	if (variable2 != nullptr)
 	{
 		if (oper == "*")
 		{ // Multiplication
-			cout << "	imull	" << variable2->memoryAddress << "(%rbp), %eax		# apply multiplication \n";
+			// cout << "	imull	" << variable2->memoryAddress << "(%rbp), %eax		# apply multiplication \n";
 		}
 		else
 		{ // Division
-			cout << "	cltd			# initialize sign register \n";
-			cout << "	idivl	" << variable2->memoryAddress << "(%rbp)		# apply division \n";
+			// cout << "	cltd			# initialize sign register \n";
+			// cout << "	idivl	" << variable2->memoryAddress << "(%rbp)		# apply division \n";
 		}
 	}
 	Symbol temporarySymbolAdded = SymbolList::getInstance()->addTemporaryVariable();
-	cout << "	movl	%eax, " << temporarySymbolAdded.memoryAddress << "(%rbp) # store expression result in temporary space in the stack \n";
+	// cout << "	movl	%eax, " << temporarySymbolAdded.memoryAddress << "(%rbp) # store expression result in temporary space in the stack \n";
 
 	return temporarySymbolAdded.symbolName;
 }
@@ -174,8 +154,12 @@ std::any CodeGenVisitor::visitExprConst(ifccParser::ExprConstContext *ctx)
 	// Store constant in a temporary variable in symbol table
 	Symbol temporarySymbolAdded = SymbolList::getInstance()->addTemporaryVariable();
 
+	BasicBlock* bb = this->cfg.current_bb;
+	PrimitiveType* pt = PrimitiveType::getInstance();
+	Type * intType = pt->getType("int");
+	bb->add_IRInstr(IRInstr::Operation::ldconst, intType, {to_string(number), temporarySymbolAdded.symbolName});
 	// Store constant in stack
-	cout << "	movl	$" << number << ", " << temporarySymbolAdded.memoryAddress << "(%rbp) 	# Store constant in " << temporarySymbolAdded.memoryAddress << " \n";
+	// cout << "	movl	$" << number << ", " << temporarySymbolAdded.memoryAddress << "(%rbp) 	# Store constant in " << temporarySymbolAdded.memoryAddress << " \n";
 
 	return (string)temporarySymbolAdded.symbolName;
 }
@@ -196,16 +180,16 @@ std::any CodeGenVisitor::visitUnaryExpression(ifccParser::UnaryExpressionContext
 	if (oper == "-") {
 
 		// Apply minus
-		cout << "	xorl 	%eax, %eax		# reset eax \n";
+		// cout << "	xorl 	%eax, %eax		# reset eax \n";
 		if (variable1 != nullptr) 
 		{
-			cout << "	subl	" << variable1->memoryAddress << "(%rbp), %eax		# apply minus \n";
+			// cout << "	subl	" << variable1->memoryAddress << "(%rbp), %eax		# apply minus \n";
 		}
 		// Temporary space in stack
 		Symbol temporarySymbolAdded = SymbolList::getInstance()->addTemporaryVariable();
 
 		// Store result in temporary space in stack
-		cout << "	movl	%eax, " << temporarySymbolAdded.memoryAddress << "(%rbp)		# store result in temporary space in stack \n";
+		// cout << "	movl	%eax, " << temporarySymbolAdded.memoryAddress << "(%rbp)		# store result in temporary space in stack \n";
 
 		return (string)temporarySymbolAdded.symbolName;
 
@@ -215,18 +199,21 @@ std::any CodeGenVisitor::visitUnaryExpression(ifccParser::UnaryExpressionContext
 	}
 }
 
-
 std::any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 {
 	string variableName = ctx->IDENTIFIER()->getText();
 	string rValueVariableName = any_cast<string>(visit(ctx->expr()));
 
-	int lValueAddress = SymbolList::getInstance()->getSymbol(variableName)->memoryAddress;
-	int rValueAddress = SymbolList::getInstance()->getSymbol(rValueVariableName)->memoryAddress;
+	BasicBlock* bb = this->cfg.current_bb;
+	PrimitiveType* pt = PrimitiveType::getInstance();
+	Type * intType = pt->getType("int");
+	bb->add_IRInstr(IRInstr::Operation::copy, intType, {rValueVariableName, variableName});
 
-	cout << "	movl	" << rValueAddress << "(%rbp), %eax		# retrieve value from temporary space in stack \n";
-	cout << "	movl	%eax, " << lValueAddress << "(%rbp)		# affect to " << variableName << "\n";
 	SymbolList::getInstance()->setVariableIsInitialized(variableName, true);
 
 	return 0;
+}
+
+const CFG & CodeGenVisitor::getCFG() const {
+	return this->cfg;
 }

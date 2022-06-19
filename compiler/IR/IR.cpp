@@ -10,8 +10,15 @@ CFG::CFG() {
     this->nextFreeSymbolIndex = -4;
 }
 
+CFG::CFG(BackendStrategy * backendStrategy) {
+    this->nextBBnumber = 0;
+    this->nextFreeSymbolIndex = -4;
+    this->backend = backendStrategy;
+}
+
 void CFG::add_bb(BasicBlock* bb) {
     this->bbs.push_back(bb);
+    this->current_bb = bb;
 }
 
 void CFG::add_to_symbol_table (string name, Type *t) {
@@ -38,6 +45,29 @@ string CFG::new_BB_name() {
     return "BB" + to_string(this->nextBBnumber++);
 }
 
+void CFG::gen_asm(ostream& o) const {
+    this->gen_asm_prologue(o);
+    for (BasicBlock* bb : this->bbs) {
+        bb->gen_asm(o, this->backend);
+    }
+    this->gen_asm_epilogue(o);
+}
+
+void CFG::gen_asm_prologue(ostream& o) const {
+    this->backend->generate_prologue(o);
+}
+
+void CFG::gen_asm_epilogue(ostream& o) const {
+    this->backend->generate_epilogue(o, *this);
+}
+
+void CFG::setReturnInstructionPresent() {
+    this->hasReturnStatement = true;
+}
+
+bool CFG::isReturnStatementPresent() const {
+    return this->hasReturnStatement;
+}
 
 
 // Basic block
@@ -48,6 +78,12 @@ void BasicBlock::add_IRInstr(IRInstr::Operation op, Type * t, vector<string> par
 BasicBlock::BasicBlock(CFG* cfg, string entry_label) {
     this->cfg = cfg;
     this->label = entry_label;
+}
+
+void BasicBlock::gen_asm(ostream &o, BackendStrategy *backend) {
+    for (IRInstr* instr : this->instrs) {
+        instr->gen_asm(o, backend);
+    }
 }
 
 // IRInstr
@@ -64,4 +100,8 @@ const IRInstr::Operation & IRInstr::getOp() const {
 
 const vector<string> & IRInstr::getParams() const {
     return this->params;
+}
+
+void IRInstr::gen_asm(ostream &o, BackendStrategy* backend) {
+    backend->generate_assembly(*this, o);
 }

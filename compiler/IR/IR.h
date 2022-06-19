@@ -11,12 +11,60 @@
 
 class BasicBlock;
 class CFG;
+class BackendStrategy;
+
 
 using namespace std;
 
 /*
 Exemple de IR.h trouvé sur moodle (peut-être qu'il faut le ranger ailleurs)
 */
+
+
+/**
+ * @brief The parameters are organized as follow : 
+ * 	The first thing to consider is that when a parameter is a register,
+ * 	it also begins with the '%' character. To test if a parameter is a 
+ * 	register, you can thus use the (param[0] == '%') test.
+ * 
+ * 	Second, the name of registers in the Intermediate Representation (IR) are
+ * 	generic names (non specific to the architecture). A mapper to every specific 
+ * 	architecture have to be implemented when implementing the backend that
+ * 	generated the assembly (BackendStrategy). See the X86Strategy for an example.
+ * 
+ * ## 1 parameter operations 
+ * 	### (pushq, popq)
+ * 		The parameter vector is of size one. It contains the only operand. As the 
+ * 		operands are always registers, they begin with the '%' character. Therefore, 
+ * 		they should be mapped to the specific registers of the architecture.
+ * 	### (declare, returnVar)
+ * 		The parameter vector is of size one. It contains the only operand. They are 
+ * 		variable names for those operations. You have to get their address using 
+ * 		the symbol table.		
+ * 
+ * 
+ * ## 2 parameters operations (copy, ldconst)
+ * 		Operand one : Source
+ * 		Operand two : Destination
+ * 	### ldconst
+ * 		* ldconst const register
+ * 		* ldconst const variable
+ *  ### copy
+ * 		* copy register memoryOffset
+ * 		* copy memoryOffset register
+ * 	### rmem 
+ * 		* rmem variableName register
+ * 	### wmem
+ * 		* wmem register variableName		
+ * 		* wmem constant variableName
+ * 
+ * ## 3 parameters operations
+ * 	### add, sub, mul, div, 
+ * 		Operand one : Destination
+ * 		Operand two : op1 (register, constant or variable)
+ * 		Operand three : op2 (register, constant or variable)
+ * 
+ */
 
 
 //! The class for one 3-address instruction
@@ -38,6 +86,8 @@ class IRInstr {
 		cmp_eq,
 		cmp_lt,
 		cmp_le,
+		returnVar,
+		declare,
 		ret,
 		retq
 	} Operation;
@@ -47,7 +97,7 @@ class IRInstr {
 	IRInstr(BasicBlock* bb_, Operation op, Type *t, vector<string> params);
 	
 	/** Actual code generation */
-	void gen_asm(ostream &o); /**< x86 assembly code generation for this IR instruction */
+	void gen_asm(ostream &o, BackendStrategy* backend); /**< x86 assembly code generation for this IR instruction */
 
 	const Operation & getOp() const;
 	const vector<string> & getParams() const; 
@@ -94,7 +144,7 @@ Possible optimization:
 class BasicBlock {
  public:
 	BasicBlock(CFG* cfg, string entry_label);
-	void gen_asm(ostream &o); /**< x86 assembly code generation for this basic block (very simple) */
+	void gen_asm(ostream &o, BackendStrategy *backend);
 
 	void add_IRInstr(IRInstr::Operation op, Type * t, vector<string> params);
 
@@ -125,14 +175,16 @@ class BasicBlock {
 class CFG {
  public:
 	CFG();
+
+	CFG(BackendStrategy * backend_strategy);
 	
 	void add_bb(BasicBlock* bb); 
 
 	// x86 code generation: could be encapsulated in a processor class in a retargetable compiler
-	// void gen_asm(ostream& o);
+	void gen_asm(ostream& o) const;
 	// string IR_reg_to_asm(string reg); /**< helper method: inputs a IR reg or input variable, returns e.g. "-24(%rbp)" for the proper value of 24 */
-	// void gen_asm_prologue(ostream& o);
-	// void gen_asm_epilogue(ostream& o);
+	void gen_asm_prologue(ostream& o) const;
+	void gen_asm_epilogue(ostream& o) const;
 
 	// symbol table methods
 	void add_to_symbol_table(string name, Type *t);
@@ -144,6 +196,10 @@ class CFG {
 	string new_BB_name();
 	BasicBlock* current_bb;
 
+	void setReturnInstructionPresent();
+
+	bool isReturnStatementPresent() const;
+
  protected:
 	map <string, Type*> SymbolType; /**< part of the symbol table  */
 	map <string, int> SymbolIndex; /**< part of the symbol table  */
@@ -153,6 +209,7 @@ class CFG {
 	BackendStrategy * backend; /**< The assembly generation strategy. Depends on the target architecture */
 	
 	vector <BasicBlock*> bbs; /**< all the basic blocks of this CFG*/
+	bool hasReturnStatement = false;
 };
 
 #endif

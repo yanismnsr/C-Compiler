@@ -3,7 +3,7 @@
 #include <iostream>
 #include <map>
 #include "BackendStrategy.h"
-#include "../IR/IR.cpp"
+#include "../IR/IR.h"
 
 using namespace std;
 
@@ -14,9 +14,9 @@ public:
     static map<string, string> registers;
 
     virtual void generate_assembly(const IRInstr &instruction, ostream &o);
+
+    virtual void generate_prologue(ostream &o);
+
+    virtual void generate_epilogue(ostream &o, const CFG & cfg);
 };
 
-map<string, string> X86Strategy::registers = {
-    {"%bp", "%rbp"},
-    {"%sp", "%rsp"},
-};
