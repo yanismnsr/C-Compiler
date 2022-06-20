@@ -80,33 +80,18 @@ std::any CodeGenVisitor::visitAddmin(ifccParser::AddminContext *ctx)
 	string oper = ctx->op->getText();
 	string expr1VarName = any_cast<string>(visit(ctx->expr(0)));
 	string expr2VarName = any_cast<string>(visit(ctx->expr(1)));
-	Symbol* variable1 = SymbolList::getInstance()->getSymbol(expr1VarName);
-	Symbol* variable2 = SymbolList::getInstance()->getSymbol(expr2VarName);
 	
+	Symbol temporarySymbolAdded = SymbolList::getInstance()->addTemporaryVariable();
+
 	PrimitiveType* pt = PrimitiveType::getInstance();
 	Type * intType = pt->getType("int");
 
-	if (variable1 != nullptr)
-	{
-		this->cfg.current_bb->add_IRInstr(IRInstr::Operation::rmem, intType, {expr1VarName, "%reg32"});
-		// cout << "	movl	" << variable1->memoryAddress << "(%rbp), %eax \n";
+	if (oper == "+") { // Addition
+		this->cfg.current_bb->add_IRInstr(IRInstr::Operation::add, intType, {temporarySymbolAdded.symbolName, expr1VarName, expr2VarName});
 	}
-	if (variable2 != nullptr)
-	{
-		if (oper == "+")
-		{ // Addition
-			this->cfg.current_bb->add_IRInstr(IRInstr::Operation::add, intType, {"%reg32", expr2VarName, "%reg32"});
-			// cout << "	addl	" << variable2->memoryAddress << "(%rbp), %eax \n";
-		}
-		else
-		{ // Subtraction
-			this->cfg.current_bb->add_IRInstr(IRInstr::Operation::sub, intType, {"%reg32", expr2VarName, "%reg32"});
-			// cout << "	subl	" << variable2->memoryAddress << "(%rbp), %eax \n";
-		}
+	else { // Subtraction
+		this->cfg.current_bb->add_IRInstr(IRInstr::Operation::sub, intType, {temporarySymbolAdded.symbolName, expr1VarName, expr2VarName});
 	}
-	Symbol temporarySymbolAdded = SymbolList::getInstance()->addTemporaryVariable();
-	this->cfg.current_bb->add_IRInstr(IRInstr::Operation::copy, intType, {temporarySymbolAdded.symbolName, "%reg32"});
-	// cout << "	movl	%eax, " << temporarySymbolAdded.memoryAddress << "(%rbp) \n";
 
 	return temporarySymbolAdded.symbolName;
 }
@@ -175,7 +160,7 @@ std::any CodeGenVisitor::visitUnaryExpression(ifccParser::UnaryExpressionContext
 	string exprVarName = any_cast<string>(visit(ctx->expr()));
 	Symbol* variable1 = SymbolList::getInstance()->getSymbol(exprVarName);
 
-	int variableAddress = variableToMemoryMap[exprVarName] * -4;
+	// int variableAddress = variableToMemoryMap[exprVarName] * -4;
 
 	if (oper == "-") {
 

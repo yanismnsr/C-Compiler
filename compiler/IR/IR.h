@@ -24,7 +24,7 @@ Exemple de IR.h trouvé sur moodle (peut-être qu'il faut le ranger ailleurs)
 /**
  * @brief The parameters are organized as follow : 
  * 	The first thing to consider is that when a parameter is a register,
- * 	it also begins with the '%' character. To test if a parameter is a 
+ * 	it always begins with the '%' character. To test if a parameter is a 
  * 	register, you can thus use the (param[0] == '%') test.
  * 
  * 	Second, the name of registers in the Intermediate Representation (IR) are
@@ -60,7 +60,7 @@ Exemple de IR.h trouvé sur moodle (peut-être qu'il faut le ranger ailleurs)
  * 
  * ## 3 parameters operations
  * 	### add, sub, mul, div, 
- * 		Operand one : Destination
+ * 		Operand one : Destination (register, variable)
  * 		Operand two : op1 (register, constant or variable)
  * 		Operand three : op2 (register, constant or variable)
  * 
