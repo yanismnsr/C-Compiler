@@ -163,33 +163,101 @@ void generateAdd(const IRInstr & instruction, ostream &o) {
 
     // Param2 : op1 (register, constant or variable)
     string operand1 = params[1];
-    string param2 = "";
     if (regex_match(operand1, regex("-?[0-9]+"))) { // constant
-        param2 = "&" + operand1;
+        o << "  movl    $" << operand1 << ", %eax" << endl;
     } else if (operand1[0] == '%') {                // register
-        param2 = X86Strategy::registers[operand1];
+        string mappedRegister = X86Strategy::registers[operand1];
+        o << "  movl    " << mappedRegister << ", %eax" << endl;
     } else {                                        // variable
         SymbolList * symbols = SymbolList::getInstance();
         Symbol * symbol = symbols->getSymbol(operand1);
-        param2 = to_string(symbol->memoryAddress) + "(%rbp)";
+        if (symbol != nullptr) {
+            int variableOffset = symbol->memoryAddress;
+            o << "  movl    " << variableOffset << "(%rbp), %eax" << endl;
+        }
     }
 
     // Param3 : op2 (register, constant or variable)
     string operand2 = params[2];
-    string param3 = "";
     if (regex_match(operand2, regex("-?[0-9]+"))) { // constant
-        param3 = "&" + operand2;
+        o << "  addl    $" << operand2 << ", %eax" << endl;
     } else if (operand2[0] == '%') {                // register
-        param3 = X86Strategy::registers[operand2];
+        string mappedRegister = X86Strategy::registers[operand2];
+        o << "  addl    " << mappedRegister << ", %eax" << endl;
     } else {                                        // variable
         SymbolList * symbols = SymbolList::getInstance();
         Symbol * symbol = symbols->getSymbol(operand2);
-        param3 = to_string(symbol->memoryAddress) + "(%rbp)";
+        if (symbol != nullptr) {
+            int variableOffset = symbol->memoryAddress;
+            o << "  addl    " << variableOffset << "(%rbp), %eax" << endl;
+        }
     }
+
+    // Destination 
+    if (destination[0] == '%') {                    // register
+        o << "  movl    %eax, " << mappedDestination << endl;
+    } else {                                        // variable
+        SymbolList * symbols = SymbolList::getInstance();
+        Symbol * symbol = symbols->getSymbol(destination);
+        if (symbol != nullptr) {
+            int variableOffset = symbol->memoryAddress;
+            o << "  movl    %eax, " << variableOffset << "(%rbp)" << endl;
+        }
+    }
+
 }
 
 void generateSub(const IRInstr & instruction, ostream &o) {
     // TODO implement this function
+    vector<string> params = instruction.getParams();
+
+    // Param1 : Destination (register)
+    string destination = params[0];
+    string mappedDestination = X86Strategy::registers[destination];
+
+    // Param2 : op1 (register, constant or variable)
+    string operand1 = params[1];
+    if (regex_match(operand1, regex("-?[0-9]+"))) { // constant
+        o << "  movl    $" << operand1 << ", %eax" << endl;
+    } else if (operand1[0] == '%') {                // register
+        string mappedRegister = X86Strategy::registers[operand1];
+        o << "  movl    " << mappedRegister << ", %eax" << endl;
+    } else {                                        // variable
+        SymbolList * symbols = SymbolList::getInstance();
+        Symbol * symbol = symbols->getSymbol(operand1);
+        if (symbol != nullptr) {
+            int variableOffset = symbol->memoryAddress;
+            o << "  movl    " << variableOffset << "(%rbp), %eax" << endl;
+        }
+    }
+
+    // Param3 : op2 (register, constant or variable)
+    string operand2 = params[2];
+    if (regex_match(operand2, regex("-?[0-9]+"))) { // constant
+        o << "  subl    $" << operand2 << ", %eax" << endl;
+    } else if (operand2[0] == '%') {                // register
+        string mappedRegister = X86Strategy::registers[operand2];
+        o << "  subl    " << mappedRegister << ", %eax" << endl;
+    } else {                                        // variable
+        SymbolList * symbols = SymbolList::getInstance();
+        Symbol * symbol = symbols->getSymbol(operand2);
+        if (symbol != nullptr) {
+            int variableOffset = symbol->memoryAddress;
+            o << "  subl    " << variableOffset << "(%rbp), %eax" << endl;
+        }
+    }
+
+    // Destination 
+    if (destination[0] == '%') {                    // register
+        o << "  movl    %eax, " << mappedDestination << endl;
+    } else {                                        // variable
+        SymbolList * symbols = SymbolList::getInstance();
+        Symbol * symbol = symbols->getSymbol(destination);
+        if (symbol != nullptr) {
+            int variableOffset = symbol->memoryAddress;
+            o << "  movl    %eax, " << variableOffset << "(%rbp)" << endl;
+        }
+    }
 }
 
 void generateMul(const IRInstr & instruction, ostream &o) {
