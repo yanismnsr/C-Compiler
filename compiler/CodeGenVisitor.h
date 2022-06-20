@@ -15,7 +15,6 @@ const string WARNING_FILE_RELATIVE_PATH_2 = "warnings.txt";
 
 class CodeGenVisitor : public ifccBaseVisitor {
 private:
-	map<string, int> variableToMemoryMap;
 	bool returnPresent = false;
 	int nbTemporaryVariable = 0;
 	CFG cfg;
