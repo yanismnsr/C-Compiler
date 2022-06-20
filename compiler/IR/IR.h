@@ -2,27 +2,69 @@
 #define IR_H
 
 #include <vector>
+#include <map>
 #include <string>
 #include <iostream>
 #include <initializer_list>
-
-// Declarations from the parser -- replace with your own
-#include "type.h"
-#include "symbole.h"
+#include "../Backend/BackendStrategy.h"
+#include "../models/Type.h"
 
 class BasicBlock;
 class CFG;
-class DefFonction;
+class BackendStrategy;
+
+
+using namespace std;
 
 /*
-
-
 Exemple de IR.h trouvé sur moodle (peut-être qu'il faut le ranger ailleurs)
-
-
 */
 
 
+/**
+ * @brief The parameters are organized as follow : 
+ * 	The first thing to consider is that when a parameter is a register,
+ * 	it also begins with the '%' character. To test if a parameter is a 
+ * 	register, you can thus use the (param[0] == '%') test.
+ * 
+ * 	Second, the name of registers in the Intermediate Representation (IR) are
+ * 	generic names (non specific to the architecture). A mapper to every specific 
+ * 	architecture have to be implemented when implementing the backend that
+ * 	generated the assembly (BackendStrategy). See the X86Strategy for an example.
+ * 
+ * ## 1 parameter operations 
+ * 	### (pushq, popq)
+ * 		The parameter vector is of size one. It contains the only operand. As the 
+ * 		operands are always registers, they begin with the '%' character. Therefore, 
+ * 		they should be mapped to the specific registers of the architecture.
+ * 	### (declare, returnVar)
+ * 		The parameter vector is of size one. It contains the only operand. They are 
+ * 		variable names for those operations. You have to get their address using 
+ * 		the symbol table.		
+ * 
+ * 
+ * ## 2 parameters operations (copy, ldconst)
+ * 		Operand one : Source
+ * 		Operand two : Destination
+ * 	### ldconst
+ * 		* ldconst const register
+ * 		* ldconst const variable
+ *  ### copy
+ * 		* copy register memoryOffset
+ * 		* copy memoryOffset register
+ * 	### rmem 
+ * 		* rmem variableName register
+ * 	### wmem
+ * 		* wmem register variableName		
+ * 		* wmem constant variableName
+ * 
+ * ## 3 parameters operations
+ * 	### add, sub, mul, div, 
+ * 		Operand one : Destination
+ * 		Operand two : op1 (register, constant or variable)
+ * 		Operand three : op2 (register, constant or variable)
+ * 
+ */
 
 
 //! The class for one 3-address instruction
@@ -38,23 +80,32 @@ class IRInstr {
 		mul,
 		rmem,
 		wmem,
+		pushq,
+		popq,
 		call, 
 		cmp_eq,
 		cmp_lt,
-		cmp_le
+		cmp_le,
+		returnVar,
+		declare,
+		ret,
+		retq
 	} Operation;
 
 
 	/**  constructor */
-	IRInstr(BasicBlock* bb_, Operation op, Type t, vector<string> params);
+	IRInstr(BasicBlock* bb_, Operation op, Type *t, vector<string> params);
 	
 	/** Actual code generation */
-	void gen_asm(ostream &o); /**< x86 assembly code generation for this IR instruction */
+	void gen_asm(ostream &o, BackendStrategy* backend); /**< x86 assembly code generation for this IR instruction */
+
+	const Operation & getOp() const;
+	const vector<string> & getParams() const; 
 	
  private:
 	BasicBlock* bb; /**< The BB this instruction belongs to, which provides a pointer to the CFG this instruction belong to */
 	Operation op;
-	Type t;
+	Type *t;
 	vector<string> params; /**< For 3-op instrs: d, x, y; for ldconst: d, c;  For call: label, d, params;  for wmem and rmem: choose yourself */
 	// if you subclass IRInstr, each IRInstr subclass has its parameters and the previous (very important) comment becomes useless: it would be a better design. 
 };
@@ -93,9 +144,9 @@ Possible optimization:
 class BasicBlock {
  public:
 	BasicBlock(CFG* cfg, string entry_label);
-	void gen_asm(ostream &o); /**< x86 assembly code generation for this basic block (very simple) */
+	void gen_asm(ostream &o, BackendStrategy *backend);
 
-	void add_IRInstr(IRInstr::Operation op, Type t, vector<string> params);
+	void add_IRInstr(IRInstr::Operation op, Type * t, vector<string> params);
 
 	// No encapsulation whatsoever here. Feel free to do better.
 	BasicBlock* exit_true;  /**< pointer to the next basic block, true branch. If nullptr, return from procedure */ 
@@ -103,10 +154,9 @@ class BasicBlock {
 	string label; /**< label of the BB, also will be the label in the generated code */
 	CFG* cfg; /** < the CFG where this block belongs */
 	vector<IRInstr*> instrs; /** < the instructions themselves. */
-  string test_var_name;  /** < when generating IR code for an if(expr) or while(expr) etc,
+  	string test_var_name;  /** < when generating IR code for an if(expr) or while(expr) etc,
 													 store here the name of the variable that holds the value of expr */
  protected:
-
  
 };
 
@@ -124,36 +174,42 @@ class BasicBlock {
  */
 class CFG {
  public:
-	CFG(DefFonction* ast);
+	CFG();
 
-	DefFonction* ast; /**< The AST this CFG comes from */
+	CFG(BackendStrategy * backend_strategy);
 	
 	void add_bb(BasicBlock* bb); 
 
 	// x86 code generation: could be encapsulated in a processor class in a retargetable compiler
-	void gen_asm(ostream& o);
-	string IR_reg_to_asm(string reg); /**< helper method: inputs a IR reg or input variable, returns e.g. "-24(%rbp)" for the proper value of 24 */
-	void gen_asm_prologue(ostream& o);
-	void gen_asm_epilogue(ostream& o);
+	void gen_asm(ostream& o) const;
+	// string IR_reg_to_asm(string reg); /**< helper method: inputs a IR reg or input variable, returns e.g. "-24(%rbp)" for the proper value of 24 */
+	void gen_asm_prologue(ostream& o) const;
+	void gen_asm_epilogue(ostream& o) const;
 
 	// symbol table methods
-	void add_to_symbol_table(string name, Type t);
-	string create_new_tempvar(Type t);
+	void add_to_symbol_table(string name, Type *t);
+	string create_new_tempvar(Type * t);
 	int get_var_index(string name);
-	Type get_var_type(string name);
+	Type* get_var_type(string name);
 
 	// basic block management
 	string new_BB_name();
 	BasicBlock* current_bb;
 
+	void setReturnInstructionPresent();
+
+	bool isReturnStatementPresent() const;
+
  protected:
-	map <string, Type> SymbolType; /**< part of the symbol table  */
+	map <string, Type*> SymbolType; /**< part of the symbol table  */
 	map <string, int> SymbolIndex; /**< part of the symbol table  */
 	int nextFreeSymbolIndex; /**< to allocate new symbols in the symbol table */
 	int nextBBnumber; /**< just for naming */
+
+	BackendStrategy * backend; /**< The assembly generation strategy. Depends on the target architecture */
 	
 	vector <BasicBlock*> bbs; /**< all the basic blocks of this CFG*/
+	bool hasReturnStatement = false;
 };
-
 
 #endif
