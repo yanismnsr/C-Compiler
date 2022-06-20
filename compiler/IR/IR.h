@@ -78,6 +78,7 @@ class IRInstr {
 		add,
 		sub,
 		mul,
+		div,
 		rmem,
 		wmem,
 		pushq,
