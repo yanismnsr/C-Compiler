@@ -77,10 +77,10 @@ std::any CodeGenVisitor::visitAddmin(ifccParser::AddminContext *ctx)
 	PrimitiveType* pt = PrimitiveType::getInstance();
 	Type * intType = pt->getType("int");
 
-	if (oper == "+") { // Addition
+	if (oper == "+") { 	// Addition
 		this->cfg.current_bb->add_IRInstr(IRInstr::Operation::add, intType, {temporarySymbolAdded.symbolName, expr1VarName, expr2VarName});
 	}
-	else { // Subtraction
+	else { 				// Subtraction
 		this->cfg.current_bb->add_IRInstr(IRInstr::Operation::sub, intType, {temporarySymbolAdded.symbolName, expr1VarName, expr2VarName});
 	}
 
