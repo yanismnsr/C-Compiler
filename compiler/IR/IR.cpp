@@ -69,15 +69,31 @@ bool CFG::isReturnStatementPresent() const {
     return this->hasReturnStatement;
 }
 
-
-// Basic block
-void BasicBlock::add_IRInstr(IRInstr::Operation op, Type * t, vector<string> params) {
-    instrs.push_back(new IRInstr(this, op, t, params));
+void CFG::errorFound() {
+    this->hasError = true; 
 }
 
+
+bool CFG::getHasError() const {
+    return this->hasError; 
+}
+
+
+// Basic block
 BasicBlock::BasicBlock(CFG* cfg, string entry_label) {
     this->cfg = cfg;
     this->label = entry_label;
+    this->symbolTable = new SymbolTable(this);
+}
+
+BasicBlock::BasicBlock(CFG* cfg, string entry_label, const BasicBlock & parentBasicBlock) {
+    this->cfg = cfg;
+    this->label = entry_label;
+    this->symbolTable = new SymbolTable(this, parentBasicBlock.symbolTable);
+}
+
+void BasicBlock::add_IRInstr(IRInstr::Operation op, Type * t, vector<string> params) {
+    instrs.push_back(new IRInstr(this, op, t, params));
 }
 
 void BasicBlock::gen_asm(ostream &o, BackendStrategy *backend) {
@@ -104,4 +120,12 @@ const vector<string> & IRInstr::getParams() const {
 
 void IRInstr::gen_asm(ostream &o, BackendStrategy* backend) {
     backend->generate_assembly(*this, o);
+}
+
+BasicBlock * IRInstr::getContainingBasicBlock() const {
+    return this->bb;
+}
+
+SymbolTable * IRInstr::getSymbolTable() const {
+    return this->bb->symbolTable;
 }

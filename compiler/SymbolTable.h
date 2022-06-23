@@ -4,9 +4,13 @@
 #include <string>
 #include <fstream> // std::ifstream
 
+#include "./IR/IR.h"
+
 using namespace std;
 
 const string WARNING_FILE_RELATIVE_PATH = "warnings.txt";
+
+class BasicBlock;
 
 typedef struct Symbol
 {
@@ -20,20 +24,19 @@ typedef struct Symbol
 
 class SymbolTable {
 private:
-    static SymbolTable* SymbolTableInstance;
-	SymbolTable();
-	void operator=(const SymbolTable& otherSymbolTable) = delete;
-    SymbolTable(const SymbolTable& SymbolTable) = delete;
-
 	map<string, Symbol*> variableToMemoryMap;
 	int nbTemporaryVariables = 0;
 	bool hasError = false;
 	ofstream warningsFile;
 
+	SymbolTable * parentSymbolTable;
+	BasicBlock * basicBlock;
+
 	void writeWarning(string message);
 	void cleanWarningsFile();
 public:
-	static SymbolTable* getInstance();
+	SymbolTable(BasicBlock* bb);
+	SymbolTable(BasicBlock* bb, SymbolTable* parentSymbolTable);
 	Symbol& addVariable(string address);
 	Symbol& addTemporaryVariable();
 	Symbol* getSymbol(string variableName);
