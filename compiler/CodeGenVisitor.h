@@ -47,6 +47,8 @@ public:
 
 	const CFG & getCFG() const;
 
+	SymbolTable * getSymbolTableOfCurrentBlock();
+
 };
 
 // virtual std::any visitDeclareVar(ifccParser::DeclareVarContext *ctx) override ;

@@ -18,7 +18,10 @@ CodeGenVisitor::CodeGenVisitor(BackendStrategy * backendStrategy)
 
 std::any CodeGenVisitor::visitProgBegin(ifccParser::ProgBeginContext *ctx)
 {
-	string bbName = this->cfg.new_BB_name();
+
+	BasicBlock* prologue = new BasicBlock(&this->cfg, "prologue");
+	this->cfg.add_bb(prologue);
+
 	BasicBlock* bb = new BasicBlock(&this->cfg, "_main");
 	this->cfg.add_bb(bb);
 
@@ -27,6 +30,9 @@ std::any CodeGenVisitor::visitProgBegin(ifccParser::ProgBeginContext *ctx)
 
 std::any CodeGenVisitor::visitProgEnd(ifccParser::ProgEndContext *ctx)
 {
+	BasicBlock* epilogue = new BasicBlock(&this->cfg, "epilogue");
+	this->cfg.add_bb(epilogue);
+
 	return visitChildren(ctx);
 }
 
@@ -48,18 +54,21 @@ std::any CodeGenVisitor::visitReturnexp(ifccParser::ReturnexpContext *ctx)
 
 std::any CodeGenVisitor::visitDeclaration(ifccParser::DeclarationContext *ctx)
 {
+
+	SymbolTable * symbolTable = this->getSymbolTableOfCurrentBlock();
+
 	std::vector<antlr4::tree::TerminalNode *> onlyDeclarations = ctx->IDENTIFIER();
 	std::vector<ifccParser::AffectationContext *> declarationsWithAffectations = ctx->affectation();
 	for (auto onlyDeclaration : onlyDeclarations)
 	{
 		string variableName = onlyDeclaration->getText();
-		SymbolTable::getInstance()->addVariable(variableName);
+		symbolTable->addVariable(variableName);
 	}
 
 	for (auto declarationWithAffectation : declarationsWithAffectations)
 	{
 		string variableName = declarationWithAffectation->IDENTIFIER()->getText();
-		SymbolTable::getInstance()->addVariable(variableName);
+		symbolTable->addVariable(variableName);
 		visit(declarationWithAffectation);
 	}
 
@@ -68,11 +77,13 @@ std::any CodeGenVisitor::visitDeclaration(ifccParser::DeclarationContext *ctx)
 
 std::any CodeGenVisitor::visitAddmin(ifccParser::AddminContext *ctx)
 {
+	SymbolTable * symbolTable = this->getSymbolTableOfCurrentBlock();
+
 	string oper = ctx->op->getText();
 	string expr1VarName = any_cast<string>(visit(ctx->expr(0)));
 	string expr2VarName = any_cast<string>(visit(ctx->expr(1)));
 	
-	Symbol temporarySymbolAdded = SymbolTable::getInstance()->addTemporaryVariable();
+	Symbol temporarySymbolAdded = symbolTable->addTemporaryVariable();
 
 	PrimitiveType* pt = PrimitiveType::getInstance();
 	Type * intType = pt->getType("int");
@@ -89,12 +100,14 @@ std::any CodeGenVisitor::visitAddmin(ifccParser::AddminContext *ctx)
 
 std::any CodeGenVisitor::visitMultdiv(ifccParser::MultdivContext *ctx)
 {
+	SymbolTable * symbolTable = this->getSymbolTableOfCurrentBlock();
+
 	string oper = ctx->op->getText();
 
 	string expr1VarName = any_cast<string>(visit(ctx->expr(0)));
 	string expr2VarName = any_cast<string>(visit(ctx->expr(1)));
 
-	Symbol temporarySymbolAdded = SymbolTable::getInstance()->addTemporaryVariable();
+	Symbol temporarySymbolAdded = symbolTable->addTemporaryVariable();
 
 	// get basic block
 	BasicBlock * bb = this->cfg.current_bb;
@@ -118,11 +131,13 @@ std::any CodeGenVisitor::visitExprIdentifier(ifccParser::ExprIdentifierContext *
 
 std::any CodeGenVisitor::visitExprConst(ifccParser::ExprConstContext *ctx)
 {
+	SymbolTable * symbolTable = this->getSymbolTableOfCurrentBlock();
+
 	// Get constant value
 	int number = stoi(ctx->CONST()->getText());
 
 	// Store constant in a temporary variable in symbol table
-	Symbol temporarySymbolAdded = SymbolTable::getInstance()->addTemporaryVariable();
+	Symbol temporarySymbolAdded = symbolTable->addTemporaryVariable();
 
 	// Get basic block
 	BasicBlock* bb = this->cfg.current_bb;
@@ -142,12 +157,13 @@ std::any CodeGenVisitor::visitParenthesis(ifccParser::ParenthesisContext *ctx)
 
 std::any CodeGenVisitor::visitUnaryExpression(ifccParser::UnaryExpressionContext *ctx) {
 
+	SymbolTable * symbolTable = this->getSymbolTableOfCurrentBlock();
+
 	string oper = ctx->op->getText();
 
 	string exprVarName = any_cast<string>(visit(ctx->expr()));
 
-	Symbol temporarySymbolAdded = SymbolTable::getInstance()->addTemporaryVariable();
-
+	Symbol temporarySymbolAdded = symbolTable->addTemporaryVariable();
 
 	// get the basic block
 	BasicBlock * bb = this->cfg.current_bb;
@@ -169,6 +185,8 @@ std::any CodeGenVisitor::visitUnaryExpression(ifccParser::UnaryExpressionContext
 
 std::any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 {
+	SymbolTable * symbolTable = this->getSymbolTableOfCurrentBlock();
+
 	string variableName = ctx->IDENTIFIER()->getText();
 	string rValueVariableName = any_cast<string>(visit(ctx->expr()));
 
@@ -177,11 +195,15 @@ std::any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 	Type * intType = pt->getType("int");
 	bb->add_IRInstr(IRInstr::Operation::copy, intType, {rValueVariableName, variableName});
 
-	SymbolTable::getInstance()->setVariableIsInitialized(variableName, true);
+	symbolTable->setVariableIsInitialized(variableName, true);
 
 	return 0;
 }
 
 const CFG & CodeGenVisitor::getCFG() const {
 	return this->cfg;
+}
+
+SymbolTable * CodeGenVisitor::getSymbolTableOfCurrentBlock() {
+	return this->cfg.current_bb->symbolTable;
 }
