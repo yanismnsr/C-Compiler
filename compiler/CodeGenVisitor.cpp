@@ -36,7 +36,7 @@ std::any CodeGenVisitor::visitReturn(ifccParser::ReturnContext *ctx)
 	this->returnPresent = true;
 
 	BasicBlock * bb = this->cfg.current_bb;
-	
+
 	string exprVarName = any_cast<string>(visit(ctx->expr()));
 
 	// void type
@@ -56,7 +56,7 @@ std::any CodeGenVisitor::visitReturn(ifccParser::ReturnContext *ctx)
 }
 
 std::any CodeGenVisitor::visitDeclaration(ifccParser::DeclarationContext *ctx)
-{	
+{
 	std::vector<antlr4::tree::TerminalNode *> onlyDeclarations = ctx->IDENTIFIER();
 	std::vector<ifccParser::AffectationContext *> declarationsWithAffectations = ctx->affectation();
 	for (auto onlyDeclaration : onlyDeclarations)
@@ -80,7 +80,7 @@ std::any CodeGenVisitor::visitAddmin(ifccParser::AddminContext *ctx)
 	string oper = ctx->op->getText();
 	string expr1VarName = any_cast<string>(visit(ctx->expr(0)));
 	string expr2VarName = any_cast<string>(visit(ctx->expr(1)));
-	
+
 	Symbol temporarySymbolAdded = SymbolList::getInstance()->addTemporaryVariable();
 
 	PrimitiveType* pt = PrimitiveType::getInstance();
@@ -101,29 +101,18 @@ std::any CodeGenVisitor::visitMultdiv(ifccParser::MultdivContext *ctx)
 	string oper = ctx->op->getText();
 	string expr1VarName = any_cast<string>(visit(ctx->expr(0)));
 	string expr2VarName = any_cast<string>(visit(ctx->expr(1)));
-	Symbol* variable1 = SymbolList::getInstance()->getSymbol(expr1VarName);
-	Symbol* variable2 = SymbolList::getInstance()->getSymbol(expr2VarName);
+    Symbol temporarySymbolAdded = SymbolList::getInstance()->addTemporaryVariable();
+	PrimitiveType* pt = PrimitiveType::getInstance();
+    Type * intType = pt->getType("int");
 
-	if (variable1 != nullptr)
-	{
-		// cout << "	movl	" << variable1->memoryAddress << "(%rbp), %eax		# move operand 1 to eax \n";
-	}
-	if (variable2 != nullptr)
-	{
-		if (oper == "*")
-		{ // Multiplication
-			// cout << "	imull	" << variable2->memoryAddress << "(%rbp), %eax		# apply multiplication \n";
-		}
-		else
-		{ // Division
-			// cout << "	cltd			# initialize sign register \n";
-			// cout << "	idivl	" << variable2->memoryAddress << "(%rbp)		# apply division \n";
-		}
-	}
-	Symbol temporarySymbolAdded = SymbolList::getInstance()->addTemporaryVariable();
-	// cout << "	movl	%eax, " << temporarySymbolAdded.memoryAddress << "(%rbp) # store expression result in temporary space in the stack \n";
+    if (oper == "*") { // Addition
+        this->cfg.current_bb->add_IRInstr(IRInstr::Operation::mul, intType, {temporarySymbolAdded.symbolName, expr1VarName, expr2VarName});
+    }
+    else { // Subtraction
+        this->cfg.current_bb->add_IRInstr(IRInstr::Operation::div, intType, {temporarySymbolAdded.symbolName, expr1VarName, expr2VarName});
+    }
 
-	return temporarySymbolAdded.symbolName;
+    return temporarySymbolAdded.symbolName;
 }
 
 std::any CodeGenVisitor::visitExprIdentifier(ifccParser::ExprIdentifierContext *ctx)
@@ -166,7 +155,7 @@ std::any CodeGenVisitor::visitUnaryExpression(ifccParser::UnaryExpressionContext
 
 		// Apply minus
 		// cout << "	xorl 	%eax, %eax		# reset eax \n";
-		if (variable1 != nullptr) 
+		if (variable1 != nullptr)
 		{
 			// cout << "	subl	" << variable1->memoryAddress << "(%rbp), %eax		# apply minus \n";
 		}
