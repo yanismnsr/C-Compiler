@@ -42,9 +42,15 @@ public:
 	virtual std::any visitExprIdentifier(ifccParser::ExprIdentifierContext *ctx) override;
 
 	virtual std::any visitAffectation(ifccParser::AffectationContext *ctx) override;
-
+	
 	virtual std::any visitUnaryExpression(ifccParser::UnaryExpressionContext *ctx) override;
 
+	virtual std::any visitIfBlock(ifccParser::IfBlockContext *ctx) override;
+
+	virtual std::any visitIfBl(ifccParser::IfBlContext *ctx) override;
+	
+	virtual std::any visitElseBlock(ifccParser::ElseBlockContext *ctx) override;
+	
 	const CFG & getCFG() const;
 
 };

@@ -184,3 +184,19 @@ std::any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 const CFG & CodeGenVisitor::getCFG() const {
 	return this->cfg;
 }
+
+std::any visitIfBlock(ifccParser::IfBlockContext *ctx) override
+{
+
+}
+
+std::any visitIfBl(ifccParser::IfBlContext *ctx) override
+{
+
+}
+	
+std::any visitElseBlock(ifccParser::ElseBlockContext *ctx) override
+{
+	
+}
+	

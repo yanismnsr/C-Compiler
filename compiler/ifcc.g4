@@ -4,15 +4,23 @@ axiom : prog ;
 
 prog : progBegin (intruction ';')* progEnd ;
 
+block : '{' intruction* '}' ; 
+
 intruction : 
     return                      # ret
     | RETURN IDENTIFIER         # retIdent
     | declaration               # declareVar
     | affectation               # affect
+	| ifBlock 					# ifBl
     ;
+
 
 return : 
     RETURN expr? ;
+
+ifBlock : 'if' '(' expr ')' (intruction | block) elseBlock? ;
+
+elseBlock : 'else' (intruction | block | ifBlock) ;
 
 declaration : 
     type (IDENTIFIER | affectation) (',' (IDENTIFIER | affectation))*
