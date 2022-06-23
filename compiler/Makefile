@@ -12,7 +12,7 @@ all: ifcc
 
 ##########################################
 # link together all pieces of our compiler 
-OBJECTS=build/main.o build/CodeGenVisitor.o build/ifccBaseVisitor.o build/ifccLexer.o build/ifccVisitor.o build/ifccParser.o build/SymbolList.o build/IR/IR.o build/Backend/X86Strategy.o build/Backend/ARMStrategy.o
+OBJECTS=build/main.o build/CodeGenVisitor.o build/ifccBaseVisitor.o build/ifccLexer.o build/ifccVisitor.o build/ifccParser.o build/SymbolTable.o build/IR/IR.o build/Backend/X86Strategy.o build/Backend/ARMStrategy.o
 
 ifcc: $(OBJECTS)
 	@mkdir -p build/

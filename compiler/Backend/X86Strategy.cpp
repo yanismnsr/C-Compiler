@@ -1,7 +1,7 @@
 #include <iostream>
 #include <regex>
 #include "X86Strategy.h"
-#include "../SymbolList.h"
+#include "../SymbolTable.h"
 
 using namespace std;
 
@@ -62,7 +62,7 @@ void generateReturn(const IRInstr & instruction, ostream &o) {
 
     vector<string> params = instruction.getParams();
 
-    SymbolList * symbols = SymbolList::getInstance();
+    SymbolTable * symbols = SymbolTable::getInstance();
     Symbol * symbol = symbols->getSymbol(params[0]);
 
     o << "  movl    " << symbol->memoryAddress << "(%rbp), %eax" << endl;
@@ -71,7 +71,7 @@ void generateReturn(const IRInstr & instruction, ostream &o) {
 void generateDeclare(const IRInstr & instruction, ostream &o) {
     vector<string> params = instruction.getParams();
     string param = params[0];
-    SymbolList * symbols = SymbolList::getInstance();
+    SymbolTable * symbols = SymbolTable::getInstance();
     symbols->addVariable(param);
 }
 
@@ -81,7 +81,7 @@ void generateCopy(const IRInstr & instruction, ostream &o) {
     string param2 = params[1];
 
     // Symbol table
-    SymbolList * symbols = SymbolList::getInstance();
+    SymbolTable * symbols = SymbolTable::getInstance();
 
     if (param1[0] == '%' && param2[0] != '%') { // param1 is a register
         // Mapping
@@ -112,7 +112,7 @@ void generateLdconst (const IRInstr & instruction, ostream &o) {
         string mappedDestination = X86Strategy::registers[destination];
         o << "        movl    $" << constValue << ", " << mappedDestination << endl;
     } else {
-        SymbolList * symbols = SymbolList::getInstance();
+        SymbolTable * symbols = SymbolTable::getInstance();
         int destinationAddress = symbols->getSymbol(destination)->memoryAddress;
         o << "        movl    $" << constValue << ", " << destinationAddress << "(%rbp)" << endl;
     }
@@ -126,7 +126,7 @@ void generateWmem(const IRInstr & instruction, ostream &o) {
 
     // Param2 : variable
     string variable = params[1];
-    SymbolList * symbols = SymbolList::getInstance();
+    SymbolTable * symbols = SymbolTable::getInstance();
     Symbol * symbol = symbols->getSymbol(variable);
 
     if (param1[0] == '%') { // param1 is a register
@@ -142,7 +142,7 @@ void generateRmem(const IRInstr & instruction, ostream &o) {
     vector<string> params = instruction.getParams();
     // Param1 : variable name
     string variable = params[0];
-    SymbolList * symbols = SymbolList::getInstance();
+    SymbolTable * symbols = SymbolTable::getInstance();
     int variableOffset = symbols->getSymbol(variable)->memoryAddress;
 
     // Param2 : destination register
@@ -169,7 +169,7 @@ void generateAdd(const IRInstr & instruction, ostream &o) {
         string mappedRegister = X86Strategy::registers[operand1];
         o << "  movl    " << mappedRegister << ", %eax" << endl;
     } else {                                        // variable
-        SymbolList * symbols = SymbolList::getInstance();
+        SymbolTable * symbols = SymbolTable::getInstance();
         Symbol * symbol = symbols->getSymbol(operand1);
         if (symbol != nullptr) {
             int variableOffset = symbol->memoryAddress;
@@ -185,7 +185,7 @@ void generateAdd(const IRInstr & instruction, ostream &o) {
         string mappedRegister = X86Strategy::registers[operand2];
         o << "  addl    " << mappedRegister << ", %eax" << endl;
     } else {                                        // variable
-        SymbolList * symbols = SymbolList::getInstance();
+        SymbolTable * symbols = SymbolTable::getInstance();
         Symbol * symbol = symbols->getSymbol(operand2);
         if (symbol != nullptr) {
             int variableOffset = symbol->memoryAddress;
@@ -197,7 +197,7 @@ void generateAdd(const IRInstr & instruction, ostream &o) {
     if (destination[0] == '%') {                    // register
         o << "  movl    %eax, " << mappedDestination << endl;
     } else {                                        // variable
-        SymbolList * symbols = SymbolList::getInstance();
+        SymbolTable * symbols = SymbolTable::getInstance();
         Symbol * symbol = symbols->getSymbol(destination);
         if (symbol != nullptr) {
             int variableOffset = symbol->memoryAddress;
@@ -223,7 +223,7 @@ void generateSub(const IRInstr & instruction, ostream &o) {
         string mappedRegister = X86Strategy::registers[operand1];
         o << "  movl    " << mappedRegister << ", %eax" << endl;
     } else {                                        // variable
-        SymbolList * symbols = SymbolList::getInstance();
+        SymbolTable * symbols = SymbolTable::getInstance();
         Symbol * symbol = symbols->getSymbol(operand1);
         if (symbol != nullptr) {
             int variableOffset = symbol->memoryAddress;
@@ -239,7 +239,7 @@ void generateSub(const IRInstr & instruction, ostream &o) {
         string mappedRegister = X86Strategy::registers[operand2];
         o << "  subl    " << mappedRegister << ", %eax" << endl;
     } else {                                        // variable
-        SymbolList * symbols = SymbolList::getInstance();
+        SymbolTable * symbols = SymbolTable::getInstance();
         Symbol * symbol = symbols->getSymbol(operand2);
         if (symbol != nullptr) {
             int variableOffset = symbol->memoryAddress;
@@ -251,7 +251,7 @@ void generateSub(const IRInstr & instruction, ostream &o) {
     if (destination[0] == '%') {                    // register
         o << "  movl    %eax, " << mappedDestination << endl;
     } else {                                        // variable
-        SymbolList * symbols = SymbolList::getInstance();
+        SymbolTable * symbols = SymbolTable::getInstance();
         Symbol * symbol = symbols->getSymbol(destination);
         if (symbol != nullptr) {
             int variableOffset = symbol->memoryAddress;
@@ -261,7 +261,8 @@ void generateSub(const IRInstr & instruction, ostream &o) {
 }
 
 void generateMul(const IRInstr & instruction, ostream &o) {
-    // TODO implement this function
+     // TODO implement this function   
+    
 }
 
 void generateDiv(const IRInstr & instruction, ostream &o) {
@@ -279,7 +280,7 @@ void generateDiv(const IRInstr & instruction, ostream &o) {
         string mappedRegister = X86Strategy::registers[operand1];
         o << "  movl    " << mappedRegister << ", %eax" << endl;
     } else {                                        // variable
-        SymbolList * symbols = SymbolList::getInstance();
+        SymbolTable * symbols = SymbolTable::getInstance();
         Symbol * symbol = symbols->getSymbol(operand1);
         if (symbol != nullptr) {
             int variableOffset = symbol->memoryAddress;
@@ -298,7 +299,7 @@ void generateDiv(const IRInstr & instruction, ostream &o) {
         string mappedRegister = X86Strategy::registers[operand2];
         o << "  idivl    " << mappedRegister << " #register " << endl;
     } else {                                        // variable
-        SymbolList * symbols = SymbolList::getInstance();
+        SymbolTable * symbols = SymbolTable::getInstance();
         Symbol * symbol = symbols->getSymbol(operand2);
         if (symbol != nullptr) {
             int variableOffset = symbol->memoryAddress;
@@ -310,7 +311,7 @@ void generateDiv(const IRInstr & instruction, ostream &o) {
     if (destination[0] == '%') {                    // register
         o << "  movl    %eax, " << mappedDestination << endl;
     } else {                                        // variable
-        SymbolList * symbols = SymbolList::getInstance();
+        SymbolTable * symbols = SymbolTable::getInstance();
         Symbol * symbol = symbols->getSymbol(destination);
         if (symbol != nullptr) {
             int variableOffset = symbol->memoryAddress;
@@ -341,7 +342,7 @@ void generateReturnVar(const IRInstr & instruction, ostream &o) {
     string variable = params[0];
 
     // Symbol table
-    SymbolList * symbols = SymbolList::getInstance();
+    SymbolTable * symbols = SymbolTable::getInstance();
     Symbol * symbol = symbols->getSymbol(variable);
 
     // Move symbol to %eax
@@ -436,7 +437,7 @@ void X86Strategy::generate_epilogue(ostream &o, const CFG & cfg) {
         cout << "	retq\n";
     }
 
-    SymbolList * symbols = SymbolList::getInstance();
+    SymbolTable * symbols = SymbolTable::getInstance();
     symbols->checkAreAllDeclaredVariablesUsedAndInitialized();
 	if (symbols->getHasError())
 	{

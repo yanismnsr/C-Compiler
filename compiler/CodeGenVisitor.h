@@ -6,7 +6,7 @@
 #include "antlr4-runtime.h"
 #include "generated/ifccBaseVisitor.h"
 #include "./IR/IR.h"
-#include "SymbolList.h"
+#include "SymbolTable.h"
 
 using namespace std;
 

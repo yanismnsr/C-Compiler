@@ -18,12 +18,12 @@ typedef struct Symbol
 	Symbol(int memAdd, bool used, bool temporary, bool initialized, string name = ""): memoryAddress(memAdd), isUsed(used), isInitialized(initialized), isTemporary(temporary), symbolName(name) {}
 } Symbol;
 
-class SymbolList {
+class SymbolTable {
 private:
-    static SymbolList* symbolListInstance;
-	SymbolList();
-	void operator=(const SymbolList& otherSymbolList) = delete;
-    SymbolList(const SymbolList& symbolList) = delete;
+    static SymbolTable* SymbolTableInstance;
+	SymbolTable();
+	void operator=(const SymbolTable& otherSymbolTable) = delete;
+    SymbolTable(const SymbolTable& SymbolTable) = delete;
 
 	map<string, Symbol*> variableToMemoryMap;
 	int nbTemporaryVariables = 0;
@@ -33,7 +33,7 @@ private:
 	void writeWarning(string message);
 	void cleanWarningsFile();
 public:
-	static SymbolList* getInstance();
+	static SymbolTable* getInstance();
 	Symbol& addVariable(string address);
 	Symbol& addTemporaryVariable();
 	Symbol* getSymbol(string variableName);
