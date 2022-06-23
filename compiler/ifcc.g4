@@ -4,25 +4,32 @@ axiom : prog ;
 
 prog : progBegin (intruction ';')* progEnd ;
 
-intruction : 
+intruction :
     returnexp                   # ret
     | declaration               # declareVar
     | affectation               # affect
+    | if                        # ifInstr
     ;
 
-returnexp : 
+returnexp :
     RETURN expr? ;
 
-declaration : 
+declaration :
     type (IDENTIFIER | affectation) (',' (IDENTIFIER | affectation))*
     ;
 
-affectation : 
+affectation :
     IDENTIFIER '=' expr
     ;
 
+if: 'if' '(' expr ')' (instruction | block) else? ;
+
+else: 'else' (instruction | block | if) ;
+
+block : '{' instruction* '}' ;
+
 expr:
-    IDENTIFIER                      # exprIdentifier   
+    IDENTIFIER                      # exprIdentifier
     | CONST                         # exprConst
     | op=(MINUS | ADD) expr         # unaryExpression
     | expr op=(MULT | DIV) expr     # multdiv
@@ -34,9 +41,9 @@ progBegin : 'int' 'main' '(' ')' '{' ;
 progEnd : '}' ;
 
 
-type : 
+type :
     'int'
-    | 'char' 
+    | 'char'
     | 'long'
     | 'float'
     | 'double'
