@@ -35,7 +35,7 @@ std::any CodeGenVisitor::visitReturn(ifccParser::ReturnContext *ctx)
 	this->returnPresent = true;
 
 	BasicBlock * bb = this->cfg.current_bb;
-	
+
 	string exprVarName = any_cast<string>(visit(ctx->expr()));
 
 	// void type
@@ -47,7 +47,7 @@ std::any CodeGenVisitor::visitReturn(ifccParser::ReturnContext *ctx)
 }
 
 std::any CodeGenVisitor::visitDeclaration(ifccParser::DeclarationContext *ctx)
-{	
+{
 	std::vector<antlr4::tree::TerminalNode *> onlyDeclarations = ctx->IDENTIFIER();
 	std::vector<ifccParser::AffectationContext *> declarationsWithAffectations = ctx->affectation();
 	for (auto onlyDeclaration : onlyDeclarations)
@@ -108,7 +108,7 @@ std::any CodeGenVisitor::visitMultdiv(ifccParser::MultdivContext *ctx)
 		bb->add_IRInstr(IRInstr::Operation::div, intType, {temporarySymbolAdded.symbolName, expr1VarName, expr2VarName});
 	}
 
-	return temporarySymbolAdded.symbolName;
+    return temporarySymbolAdded.symbolName;
 }
 
 std::any CodeGenVisitor::visitExprIdentifier(ifccParser::ExprIdentifierContext *ctx)
