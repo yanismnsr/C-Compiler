@@ -1,5 +1,4 @@
-#ifndef IR_H
-#define IR_H
+#pragma once
 
 #include <vector>
 #include <map>
@@ -8,10 +7,12 @@
 #include <initializer_list>
 #include "../Backend/BackendStrategy.h"
 #include "../models/Type.h"
+#include "../SymbolTable.h"
 
 class BasicBlock;
 class CFG;
 class BackendStrategy;
+class SymbolTable;
 
 
 using namespace std;
@@ -103,6 +104,10 @@ class IRInstr {
 	const Operation & getOp() const;
 	const vector<string> & getParams() const;
 
+	BasicBlock * getContainingBasicBlock() const;
+
+	SymbolTable * getSymbolTable() const;
+
  private:
 	BasicBlock* bb; /**< The BB this instruction belongs to, which provides a pointer to the CFG this instruction belong to */
 	Operation op;
@@ -145,6 +150,7 @@ Possible optimization:
 class BasicBlock {
  public:
 	BasicBlock(CFG* cfg, string entry_label);
+	BasicBlock(CFG* cfg, string entry_label, const BasicBlock & parentBasicBlock);
 	void gen_asm(ostream &o, BackendStrategy *backend);
 
 	void add_IRInstr(IRInstr::Operation op, Type * t, vector<string> params);
@@ -157,6 +163,9 @@ class BasicBlock {
 	vector<IRInstr*> instrs; /** < the instructions themselves. */
   	string test_var_name;  /** < when generating IR code for an if(expr) or while(expr) etc,
 													 store here the name of the variable that holds the value of expr */
+
+	SymbolTable* symbolTable;
+
  protected:
 
 };
@@ -201,6 +210,10 @@ class CFG {
 
 	bool isReturnStatementPresent() const;
 
+	void errorFound();
+
+	bool getHasError() const; 
+
  protected:
 	map <string, Type*> SymbolType; /**< part of the symbol table  */
 	map <string, int> SymbolIndex; /**< part of the symbol table  */
@@ -211,6 +224,5 @@ class CFG {
 
 	vector <BasicBlock*> bbs; /**< all the basic blocks of this CFG*/
 	bool hasReturnStatement = false;
+	bool hasError = false;
 };
-
-#endif

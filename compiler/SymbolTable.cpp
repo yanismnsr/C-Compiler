@@ -6,11 +6,17 @@
 
 using namespace std;
 
-SymbolTable* SymbolTable::SymbolTableInstance = nullptr;
-
-SymbolTable::SymbolTable() 
+SymbolTable::SymbolTable(BasicBlock* bb) 
 {
 	cleanWarningsFile();
+	this->basicBlock = bb; 
+	this->parentSymbolTable = nullptr;
+}
+
+SymbolTable::SymbolTable(BasicBlock* bb, SymbolTable* parentSymbolTable) {
+	cleanWarningsFile();
+	this->basicBlock = bb;
+	this->parentSymbolTable = parentSymbolTable;
 }
 
 void SymbolTable::cleanWarningsFile()
@@ -36,7 +42,7 @@ Symbol& SymbolTable::addVariable(string variableName)
 	else
 	{
 		cerr << "Variable \'" + variableName + "\' already exists." << endl;
-		hasError = true;
+		this->basicBlock->cfg->errorFound();
 	}
 
 	return *(variableToMemoryMap[variableName]);
@@ -51,28 +57,30 @@ Symbol& SymbolTable::addTemporaryVariable()
 
 Symbol* SymbolTable::getSymbol(string variableName)
 {
-	Symbol* symbol = variableToMemoryMap.find(variableName) == variableToMemoryMap.end() ? nullptr : variableToMemoryMap.find(variableName)->second;
-	if (symbol == nullptr) 
+	bool found = false;
+	SymbolTable * st = this;
+	Symbol* symbol;
+
+	while (st != nullptr) {
+		symbol = variableToMemoryMap.find(variableName) == variableToMemoryMap.end() ? nullptr : variableToMemoryMap.find(variableName)->second;
+		if (symbol != nullptr) {
+			found = true;
+			symbol->isUsed = true;
+			return symbol;
+		}
+		st = st->parentSymbolTable;
+	}
+
+	if (!found) 
 	{
 		cerr << "Variable \'" + variableName + "\' was not declared" << endl;
-		hasError = true;
-	} else 
-	{
-		symbol->isUsed = true;
+		this->basicBlock->cfg->errorFound();
 	}
-	return symbol;
+	return nullptr;
 }
 
 bool SymbolTable::getHasError() { return hasError; }
 
-
-SymbolTable* SymbolTable::getInstance()
-{
-       if (SymbolTableInstance == nullptr)
-           SymbolTableInstance = new SymbolTable(); 
-      
-        return SymbolTableInstance;
-}
 
 void SymbolTable::checkAreAllDeclaredVariablesUsedAndInitialized()
 {

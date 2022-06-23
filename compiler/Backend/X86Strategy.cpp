@@ -62,6 +62,8 @@ void generateReturn(const IRInstr &instruction, ostream &o)
 {
     // Instruction with 1 parameter
 
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+
     // Security check
     if (instruction.getParams().size() != 1)
     {
@@ -70,18 +72,18 @@ void generateReturn(const IRInstr &instruction, ostream &o)
 
     vector<string> params = instruction.getParams();
 
-    SymbolTable *symbols = SymbolTable::getInstance();
-    Symbol *symbol = symbols->getSymbol(params[0]);
+    Symbol *symbol = symbolTable->getSymbol(params[0]);
 
     o << "  movl    " << symbol->memoryAddress << "(%rbp), %eax" << endl;
 }
 
 void generateDeclare(const IRInstr &instruction, ostream &o)
 {
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+
     vector<string> params = instruction.getParams();
     string param = params[0];
-    SymbolTable *symbols = SymbolTable::getInstance();
-    symbols->addVariable(param);
+    symbolTable->addVariable(param);
 }
 
 void generateCopy(const IRInstr &instruction, ostream &o)
@@ -91,25 +93,25 @@ void generateCopy(const IRInstr &instruction, ostream &o)
     string param2 = params[1];
 
     // Symbol table
-    SymbolTable *symbols = SymbolTable::getInstance();
+    SymbolTable * symbolTable = instruction.getSymbolTable();
 
     if (param1[0] == '%' && param2[0] != '%')
     { // param1 is a register
         // Mapping
         string mappedParameter1 = X86Strategy::registers[param1];
-        int parameter2Address = symbols->getSymbol(param2)->memoryAddress;
+        int parameter2Address = symbolTable->getSymbol(param2)->memoryAddress;
         o << "  movl    " << mappedParameter1 << ", " << parameter2Address << "(%rbp)" << endl;
     }
     else if (param2[0] == '%' && param1[0] != '%')
     { // Parameter 2 is a register
         string mappedParameter2 = X86Strategy::registers[param2];
-        int parameter1Address = symbols->getSymbol(param1)->memoryAddress;
+        int parameter1Address = symbolTable->getSymbol(param1)->memoryAddress;
         o << "  movl    " << parameter1Address << "(%rbp), " << mappedParameter2 << endl;
     }
     else
     { // variable to variable
-        int parameter1Address = symbols->getSymbol(param1)->memoryAddress;
-        int parameter2Address = symbols->getSymbol(param2)->memoryAddress;
+        int parameter1Address = symbolTable->getSymbol(param1)->memoryAddress;
+        int parameter2Address = symbolTable->getSymbol(param2)->memoryAddress;
         o << "  movl    " << parameter1Address << "(%rbp), %eax" << endl;
         o << "  movl    %eax, " << parameter2Address << "(%rbp)" << endl;
     }
@@ -131,8 +133,8 @@ void generateLdconst(const IRInstr &instruction, ostream &o)
     }
     else
     {
-        SymbolTable *symbols = SymbolTable::getInstance();
-        int destinationAddress = symbols->getSymbol(destination)->memoryAddress;
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+        int destinationAddress = symbolTable->getSymbol(destination)->memoryAddress;
         o << "        movl    $" << constValue << ", " << destinationAddress << "(%rbp)" << endl;
     }
 }
@@ -145,8 +147,10 @@ void generateWmem(const IRInstr &instruction, ostream &o)
 
     // Param2 : variable
     string variable = params[1];
-    SymbolTable *symbols = SymbolTable::getInstance();
-    Symbol *symbol = symbols->getSymbol(variable);
+
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+
+    Symbol *symbol = symbolTable->getSymbol(variable);
 
     if (param1[0] == '%')
     { // param1 is a register
@@ -162,11 +166,14 @@ void generateWmem(const IRInstr &instruction, ostream &o)
 
 void generateRmem(const IRInstr &instruction, ostream &o)
 {
+
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+
     vector<string> params = instruction.getParams();
     // Param1 : variable name
     string variable = params[0];
-    SymbolTable *symbols = SymbolTable::getInstance();
-    int variableOffset = symbols->getSymbol(variable)->memoryAddress;
+
+    int variableOffset = symbolTable->getSymbol(variable)->memoryAddress;
 
     // Param2 : destination register
     string destination = params[1];
@@ -198,8 +205,10 @@ void generateAdd(const IRInstr &instruction, ostream &o)
     }
     else
     { // variable
-        SymbolTable *symbols = SymbolTable::getInstance();
-        Symbol *symbol = symbols->getSymbol(operand1);
+
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+
+        Symbol *symbol = symbolTable->getSymbol(operand1);
         if (symbol != nullptr)
         {
             int variableOffset = symbol->memoryAddress;
@@ -220,8 +229,10 @@ void generateAdd(const IRInstr &instruction, ostream &o)
     }
     else
     { // variable
-        SymbolTable *symbols = SymbolTable::getInstance();
-        Symbol *symbol = symbols->getSymbol(operand2);
+
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+
+        Symbol *symbol = symbolTable->getSymbol(operand2);
         if (symbol != nullptr)
         {
             int variableOffset = symbol->memoryAddress;
@@ -236,8 +247,10 @@ void generateAdd(const IRInstr &instruction, ostream &o)
     }
     else
     { // variable
-        SymbolTable *symbols = SymbolTable::getInstance();
-        Symbol *symbol = symbols->getSymbol(destination);
+
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+
+        Symbol *symbol = symbolTable->getSymbol(destination);
         if (symbol != nullptr)
         {
             int variableOffset = symbol->memoryAddress;
@@ -265,8 +278,10 @@ void generateSub(const IRInstr &instruction, ostream &o)
         o << "  movl    " << mappedRegister << ", %eax" << endl;
     }
     else{ // variable
-        SymbolTable *symbols = SymbolTable::getInstance();
-        Symbol *symbol = symbols->getSymbol(operand1);
+
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+
+        Symbol *symbol = symbolTable->getSymbol(operand1);
         if (symbol != nullptr)
         {
             int variableOffset = symbol->memoryAddress;
@@ -284,8 +299,10 @@ void generateSub(const IRInstr &instruction, ostream &o)
         o << "  subl    " << mappedRegister << ", %eax" << endl;
     }
     else{ // variable
-        SymbolTable *symbols = SymbolTable::getInstance();
-        Symbol *symbol = symbols->getSymbol(operand2);
+        
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+
+        Symbol *symbol = symbolTable->getSymbol(operand2);
         if (symbol != nullptr){
             int variableOffset = symbol->memoryAddress;
             o << "  subl    " << variableOffset << "(%rbp), %eax" << endl;
@@ -297,8 +314,8 @@ void generateSub(const IRInstr &instruction, ostream &o)
         o << "  movl    %eax, " << mappedDestination << endl;
     }
     else{ // variable
-        SymbolTable *symbols = SymbolTable::getInstance();
-        Symbol *symbol = symbols->getSymbol(destination);
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+        Symbol *symbol = symbolTable->getSymbol(destination);
         if (symbol != nullptr){
             int variableOffset = symbol->memoryAddress;
             o << "  movl    %eax, " << variableOffset << "(%rbp)" << endl;
@@ -328,8 +345,8 @@ void generateMul(const IRInstr &instruction, ostream &o)
         o << "  movl    " << mappedRegister << ", %eax" << endl;
     }
     else{ // variable
-        SymbolTable *symbols = SymbolTable::getInstance();
-        Symbol *symbol = symbols->getSymbol(operand1);
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+        Symbol *symbol = symbolTable->getSymbol(operand1);
         if (symbol != nullptr){
             int variableOffset = symbol->memoryAddress;
             o << "  movl    " << variableOffset << "(%rbp), %eax" << endl;
@@ -347,8 +364,8 @@ void generateMul(const IRInstr &instruction, ostream &o)
         o << "  imull    " << mappedRegister << ", %eax #register " << endl;
     }
     else{ // variable
-        SymbolTable *symbols = SymbolTable::getInstance();
-        Symbol *symbol = symbols->getSymbol(operand2);
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+        Symbol *symbol = symbolTable->getSymbol(operand2);
         if (symbol != nullptr){
             int variableOffset = symbol->memoryAddress;
             o << "  imull    " << variableOffset << "(%rbp), %eax   #variable  " << endl;
@@ -361,8 +378,8 @@ void generateMul(const IRInstr &instruction, ostream &o)
         o << "  movl    %eax, " << mappedDestination << endl;
     }
     else{ // variable
-        SymbolTable *symbols = SymbolTable::getInstance();
-        Symbol *symbol = symbols->getSymbol(destination);
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+        Symbol *symbol = symbolTable->getSymbol(destination);
         if (symbol != nullptr){
             int variableOffset = symbol->memoryAddress;
             o << "  movl    %eax, " << variableOffset << "(%rbp)" << endl;
@@ -391,8 +408,8 @@ void generateDiv(const IRInstr &instruction, ostream &o)
     }
     else
     { // variable
-        SymbolTable *symbols = SymbolTable::getInstance();
-        Symbol *symbol = symbols->getSymbol(operand1);
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+        Symbol *symbol = symbolTable->getSymbol(operand1);
         if (symbol != nullptr)
         {
             int variableOffset = symbol->memoryAddress;
@@ -416,8 +433,8 @@ void generateDiv(const IRInstr &instruction, ostream &o)
     }
     else
     { // variable
-        SymbolTable *symbols = SymbolTable::getInstance();
-        Symbol *symbol = symbols->getSymbol(operand2);
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+        Symbol *symbol = symbolTable->getSymbol(operand2);
         if (symbol != nullptr)
         {
             int variableOffset = symbol->memoryAddress;
@@ -432,8 +449,8 @@ void generateDiv(const IRInstr &instruction, ostream &o)
     }
     else
     { // variable
-        SymbolTable *symbols = SymbolTable::getInstance();
-        Symbol *symbol = symbols->getSymbol(destination);
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+        Symbol *symbol = symbolTable->getSymbol(destination);
         if (symbol != nullptr)
         {
             int variableOffset = symbol->memoryAddress;
@@ -469,8 +486,8 @@ void generateReturnVar(const IRInstr &instruction, ostream &o)
     string variable = params[0];
 
     // Symbol table
-    SymbolTable *symbols = SymbolTable::getInstance();
-    Symbol *symbol = symbols->getSymbol(variable);
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+    Symbol *symbol = symbolTable->getSymbol(variable);
 
     // Move symbol to %eax
     o << "        movl    " << symbol->memoryAddress << "(%rbp), %eax" << endl;
@@ -570,9 +587,9 @@ void X86Strategy::generate_epilogue(ostream &o, const CFG &cfg)
         cout << "	retq\n";
     }
 
-    SymbolTable *symbols = SymbolTable::getInstance();
-    symbols->checkAreAllDeclaredVariablesUsedAndInitialized();
-    if (symbols->getHasError())
+    SymbolTable * symbolTable = cfg.current_bb->symbolTable;
+    symbolTable->checkAreAllDeclaredVariablesUsedAndInitialized();
+    if (cfg.getHasError())
     {
         throw std::runtime_error("");
     }
