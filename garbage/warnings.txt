@@ -1,0 +1,8 @@
+Variable 'b' is declared but never used.
+
+Variable 'b' is not initialized.
+
+Variable 'c' is declared but never used.
+
+Variable 'c' is not initialized.
+

@@ -5,13 +5,12 @@ axiom : prog ;
 prog : progBegin (intruction ';')* progEnd ;
 
 intruction : 
-    return                      # ret
-    | RETURN IDENTIFIER         # retIdent
+    returnexp                   # ret
     | declaration               # declareVar
     | affectation               # affect
     ;
 
-return : 
+returnexp : 
     RETURN expr? ;
 
 declaration : 

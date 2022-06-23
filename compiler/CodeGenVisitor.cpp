@@ -30,7 +30,7 @@ std::any CodeGenVisitor::visitProgEnd(ifccParser::ProgEndContext *ctx)
 	return visitChildren(ctx);
 }
 
-std::any CodeGenVisitor::visitReturn(ifccParser::ReturnContext *ctx)
+std::any CodeGenVisitor::visitReturnexp(ifccParser::ReturnexpContext *ctx)
 {
 	this->returnPresent = true;
 
@@ -141,6 +141,7 @@ std::any CodeGenVisitor::visitParenthesis(ifccParser::ParenthesisContext *ctx)
 }
 
 std::any CodeGenVisitor::visitUnaryExpression(ifccParser::UnaryExpressionContext *ctx) {
+
 	string oper = ctx->op->getText();
 
 	string exprVarName = any_cast<string>(visit(ctx->expr()));
@@ -156,7 +157,7 @@ std::any CodeGenVisitor::visitUnaryExpression(ifccParser::UnaryExpressionContext
 	if (oper == "-") {
 
 		Type * intType = PrimitiveType::getInstance()->getType("int");
-		bb->add_IRInstr(IRInstr::Operation::sub, PrimitiveType::getInstance()->getType("int"), {temporarySymbolAdded.symbolName, 0, exprVarName});
+		bb->add_IRInstr(IRInstr::Operation::sub, intType, {temporarySymbolAdded.symbolName, "0", exprVarName});
 
 		return (string)temporarySymbolAdded.symbolName;
 

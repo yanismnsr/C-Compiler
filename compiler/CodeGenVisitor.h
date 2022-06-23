@@ -29,7 +29,7 @@ public:
 
 	virtual std::any visitDeclaration(ifccParser::DeclarationContext *ctx) override;
 
-	virtual std::any visitReturn(ifccParser::ReturnContext *ctx) override;
+	virtual std::any visitReturnexp(ifccParser::ReturnexpContext *ctx) override;
 
 	virtual std::any visitAddmin(ifccParser::AddminContext *ctx) override;
 
