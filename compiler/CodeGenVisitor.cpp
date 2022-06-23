@@ -1,7 +1,7 @@
 #include "CodeGenVisitor.h"
 #include "antlr4-runtime.h"
 #include "./generated/ifccVisitor.h"
-#include "./SymbolList.h"
+#include "./SymbolTable.h"
 #include <iostream>
 #include <map>
 #include <any>
@@ -53,13 +53,13 @@ std::any CodeGenVisitor::visitDeclaration(ifccParser::DeclarationContext *ctx)
 	for (auto onlyDeclaration : onlyDeclarations)
 	{
 		string variableName = onlyDeclaration->getText();
-		SymbolList::getInstance()->addVariable(variableName);
+		SymbolTable::getInstance()->addVariable(variableName);
 	}
 
 	for (auto declarationWithAffectation : declarationsWithAffectations)
 	{
 		string variableName = declarationWithAffectation->IDENTIFIER()->getText();
-		SymbolList::getInstance()->addVariable(variableName);
+		SymbolTable::getInstance()->addVariable(variableName);
 		visit(declarationWithAffectation);
 	}
 
@@ -72,7 +72,7 @@ std::any CodeGenVisitor::visitAddmin(ifccParser::AddminContext *ctx)
 	string expr1VarName = any_cast<string>(visit(ctx->expr(0)));
 	string expr2VarName = any_cast<string>(visit(ctx->expr(1)));
 	
-	Symbol temporarySymbolAdded = SymbolList::getInstance()->addTemporaryVariable();
+	Symbol temporarySymbolAdded = SymbolTable::getInstance()->addTemporaryVariable();
 
 	PrimitiveType* pt = PrimitiveType::getInstance();
 	Type * intType = pt->getType("int");
@@ -94,7 +94,7 @@ std::any CodeGenVisitor::visitMultdiv(ifccParser::MultdivContext *ctx)
 	string expr1VarName = any_cast<string>(visit(ctx->expr(0)));
 	string expr2VarName = any_cast<string>(visit(ctx->expr(1)));
 
-	Symbol temporarySymbolAdded = SymbolList::getInstance()->addTemporaryVariable();
+	Symbol temporarySymbolAdded = SymbolTable::getInstance()->addTemporaryVariable();
 
 	// get basic block
 	BasicBlock * bb = this->cfg.current_bb;
@@ -122,7 +122,7 @@ std::any CodeGenVisitor::visitExprConst(ifccParser::ExprConstContext *ctx)
 	int number = stoi(ctx->CONST()->getText());
 
 	// Store constant in a temporary variable in symbol table
-	Symbol temporarySymbolAdded = SymbolList::getInstance()->addTemporaryVariable();
+	Symbol temporarySymbolAdded = SymbolTable::getInstance()->addTemporaryVariable();
 
 	// Get basic block
 	BasicBlock* bb = this->cfg.current_bb;
@@ -145,7 +145,7 @@ std::any CodeGenVisitor::visitUnaryExpression(ifccParser::UnaryExpressionContext
 
 	string exprVarName = any_cast<string>(visit(ctx->expr()));
 
-	Symbol temporarySymbolAdded = SymbolList::getInstance()->addTemporaryVariable();
+	Symbol temporarySymbolAdded = SymbolTable::getInstance()->addTemporaryVariable();
 
 
 	// get the basic block
@@ -176,7 +176,7 @@ std::any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 	Type * intType = pt->getType("int");
 	bb->add_IRInstr(IRInstr::Operation::copy, intType, {rValueVariableName, variableName});
 
-	SymbolList::getInstance()->setVariableIsInitialized(variableName, true);
+	SymbolTable::getInstance()->setVariableIsInitialized(variableName, true);
 
 	return 0;
 }

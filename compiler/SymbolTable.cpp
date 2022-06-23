@@ -2,32 +2,32 @@
 #include <map>
 
 
-#include "./SymbolList.h"
+#include "./SymbolTable.h"
 
 using namespace std;
 
-SymbolList* SymbolList::symbolListInstance = nullptr;
+SymbolTable* SymbolTable::SymbolTableInstance = nullptr;
 
-SymbolList::SymbolList() 
+SymbolTable::SymbolTable() 
 {
 	cleanWarningsFile();
 }
 
-void SymbolList::cleanWarningsFile()
+void SymbolTable::cleanWarningsFile()
 {
 	warningsFile.open(WARNING_FILE_RELATIVE_PATH);
 	warningsFile << "";
 	warningsFile.close();
 }
 
-void SymbolList::writeWarning(string message)
+void SymbolTable::writeWarning(string message)
 {
 	warningsFile.open(WARNING_FILE_RELATIVE_PATH, std::ios_base::app);
 	warningsFile << message << endl;
 	warningsFile.close();
 }
 
-Symbol& SymbolList::addVariable(string variableName)
+Symbol& SymbolTable::addVariable(string variableName)
 {
 	if (variableToMemoryMap.find(variableName) == variableToMemoryMap.end())
 	{
@@ -42,14 +42,14 @@ Symbol& SymbolList::addVariable(string variableName)
 	return *(variableToMemoryMap[variableName]);
 }
 
-Symbol& SymbolList::addTemporaryVariable()
+Symbol& SymbolTable::addTemporaryVariable()
 {
 	string temporaryVariableName = "#tmp" + to_string(++nbTemporaryVariables);
 	variableToMemoryMap[temporaryVariableName] = new Symbol((variableToMemoryMap.size() + 1) * -4, true, true, true, temporaryVariableName);
 	return *(variableToMemoryMap[temporaryVariableName]);
 }
 
-Symbol* SymbolList::getSymbol(string variableName)
+Symbol* SymbolTable::getSymbol(string variableName)
 {
 	Symbol* symbol = variableToMemoryMap.find(variableName) == variableToMemoryMap.end() ? nullptr : variableToMemoryMap.find(variableName)->second;
 	if (symbol == nullptr) 
@@ -63,18 +63,18 @@ Symbol* SymbolList::getSymbol(string variableName)
 	return symbol;
 }
 
-bool SymbolList::getHasError() { return hasError; }
+bool SymbolTable::getHasError() { return hasError; }
 
 
-SymbolList* SymbolList::getInstance()
+SymbolTable* SymbolTable::getInstance()
 {
-       if (symbolListInstance == nullptr)
-           symbolListInstance = new SymbolList(); 
+       if (SymbolTableInstance == nullptr)
+           SymbolTableInstance = new SymbolTable(); 
       
-        return symbolListInstance;
+        return SymbolTableInstance;
 }
 
-void SymbolList::checkAreAllDeclaredVariablesUsedAndInitialized()
+void SymbolTable::checkAreAllDeclaredVariablesUsedAndInitialized()
 {
 	for (auto variable : variableToMemoryMap)
 	{
@@ -92,7 +92,7 @@ void SymbolList::checkAreAllDeclaredVariablesUsedAndInitialized()
 	}
 }
 
-void SymbolList::setVariableIsInitialized(string variableName, bool isInitialized) 
+void SymbolTable::setVariableIsInitialized(string variableName, bool isInitialized) 
 {
 	Symbol* symbol = variableToMemoryMap.find(variableName) == variableToMemoryMap.end() ? nullptr : variableToMemoryMap.find(variableName)->second;
 	if (symbol != nullptr) 
