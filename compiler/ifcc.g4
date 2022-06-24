@@ -2,41 +2,48 @@ grammar ifcc;
 
 axiom : prog ;
 
-prog : progBegin (intruction ';')* progEnd ;
+prog : 'int' 'main' '(' ')' block ;
 
-intruction : 
+instruction :
     returnexp                   # ret
     | declaration               # declareVar
     | affectation               # affect
     ;
 
-returnexp : 
+returnexp :
     RETURN expr? ;
 
-declaration : 
+declaration :
     type (IDENTIFIER | affectation) (',' (IDENTIFIER | affectation))*
     ;
 
-affectation : 
+affectation :
     IDENTIFIER '=' expr
     ;
 
+ifInstr: 'if' '(' expr ')' instruction elseInstr? ;
+
+elseInstr: 'else' (instruction | ifInstr) ;
+
+block : '{' ( (instruction ';') | block | ifInstr )*  '}' ;
+
 expr:
-    IDENTIFIER                      # exprIdentifier   
+    IDENTIFIER                      # exprIdentifier
     | CONST                         # exprConst
     | op=(MINUS | ADD) expr         # unaryExpression
     | expr op=(MULT | DIV) expr     # multdiv
     | expr op=(ADD | MINUS) expr    # addmin
     | '(' expr ')'                  # parenthesis
+    | expr comparisonoperator expr  # comparison
     ;
 
-progBegin : 'int' 'main' '(' ')' '{' ;
-progEnd : '}' ;
+comparisonoperator : 
+    '==' | '<' | '>' | '<=' | '>=' | '!=';
 
 
-type : 
+type :
     'int'
-    | 'char' 
+    | 'char'
     | 'long'
     | 'float'
     | 'double'
