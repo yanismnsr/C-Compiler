@@ -36,6 +36,29 @@ std::any CodeGenVisitor::visitProgEnd(ifccParser::ProgEndContext *ctx)
 	return visitChildren(ctx);
 }
 
+std::any CodeGenVisitor::visitIf(ifccParser::IfContext *ctx)
+{
+    auto *endIfBB = new BasicBlock(cfg, cfg->new_BB_name());
+    endIfBB->exit_true = testBB->exit_true;
+    endIfBB->exit_false = testBB->exit_false;
+
+    auto *thenBB = new BasicBlock(cfg, cfg->new_BB_name());
+
+    BasicBlock *elseBB = endIfBB;
+    if (falseCodeBlock != nullptr) {
+        elseBB = new BasicBlock(cfg, cfg->new_BB_name());
+        testBB->exit_false = elseBB;
+    } else {
+        testBB->exit_false = endIfBB;
+    }
+    return visitChildren(ctx);
+}
+
+std::any CodeGenVisitor::visitElse(ifccParser::ElseContext *ctx)
+{
+    return visitChildren(ctx);
+}
+
 std::any CodeGenVisitor::visitReturnexp(ifccParser::ReturnexpContext *ctx)
 {
 	this->returnPresent = true;

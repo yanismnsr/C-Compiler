@@ -2,9 +2,9 @@ grammar ifcc;
 
 axiom : prog ;
 
-prog : progBegin (intruction ';')* progEnd ;
+prog : progBegin (instruction ';')* progEnd ;
 
-intruction :
+instruction :
     returnexp                   # ret
     | declaration               # declareVar
     | affectation               # affect
