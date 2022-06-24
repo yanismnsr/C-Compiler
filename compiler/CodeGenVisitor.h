@@ -37,6 +37,10 @@ public:
 
 	virtual std::any visitParenthesis(ifccParser::ParenthesisContext *ctx) override;
 
+	virtual std::any visitIf(ifccParser::IfContext *ctx) override;
+
+	virtual std::any visitElse(ifccParser::elseContext *ctx) override;
+
 	virtual std::any visitExprConst(ifccParser::ExprConstContext *ctx) override;
 
 	virtual std::any visitExprIdentifier(ifccParser::ExprIdentifierContext *ctx) override;

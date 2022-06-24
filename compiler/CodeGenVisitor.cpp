@@ -27,7 +27,31 @@ std::any CodeGenVisitor::visitProgBegin(ifccParser::ProgBeginContext *ctx)
 
 std::any CodeGenVisitor::visitProgEnd(ifccParser::ProgEndContext *ctx)
 {
+    BasicBlock* bb = new BasicBlock(&this->cfg, "_main")
 	return visitChildren(ctx);
+}
+
+std::any CodeGenVisitor::visitIf(ifccParser::IfContext *ctx)
+{
+    auto *endIfBB = new BasicBlock(cfg, cfg->new_BB_name());
+    endIfBB->exit_true = testBB->exit_true;
+    endIfBB->exit_false = testBB->exit_false;
+
+    auto *thenBB = new BasicBlock(cfg, cfg->new_BB_name());
+
+    BasicBlock *elseBB = endIfBB;
+    if (falseCodeBlock != nullptr) {
+        elseBB = new BasicBlock(cfg, cfg->new_BB_name());
+        testBB->exit_false = elseBB;
+    } else {
+        testBB->exit_false = endIfBB;
+    }
+    return visitChildren(ctx);
+}
+
+std::any CodeGenVisitor::visitElse(ifccParser::ElseContext *ctx)
+{
+    return visitChildren(ctx);
 }
 
 std::any CodeGenVisitor::visitReturnexp(ifccParser::ReturnexpContext *ctx)
@@ -71,7 +95,7 @@ std::any CodeGenVisitor::visitAddmin(ifccParser::AddminContext *ctx)
 	string oper = ctx->op->getText();
 	string expr1VarName = any_cast<string>(visit(ctx->expr(0)));
 	string expr2VarName = any_cast<string>(visit(ctx->expr(1)));
-	
+
 	Symbol temporarySymbolAdded = SymbolTable::getInstance()->addTemporaryVariable();
 
 	PrimitiveType* pt = PrimitiveType::getInstance();
