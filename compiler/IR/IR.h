@@ -65,6 +65,9 @@ Exemple de IR.h trouvé sur moodle (peut-être qu'il faut le ranger ailleurs)
  * 		Operand two : op1 (register, constant or variable)
  * 		Operand three : op2 (register, constant or variable)
  *
+ *  * ## comparisons : 2 parameters operations (cmp_e, cmp_ne, cmp_gt, cmp_ge, cmp_lt, cmp_le)
+ * 		Operand one : left operand to compare
+ * 		Operand two : right operand to compare
  */
 
 
@@ -86,6 +89,9 @@ class IRInstr {
 		popq,
 		call,
 		cmp_eq,
+		cmp_ne,
+		cmp_gt,
+		cmp_ge,
 		cmp_lt,
 		cmp_le,
 		returnVar,

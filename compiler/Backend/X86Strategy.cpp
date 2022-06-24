@@ -464,19 +464,52 @@ void generateCall(const IRInstr &instruction, ostream &o)
     // TODO implement this function
 }
 
-void generateCmpEq(const IRInstr &instruction, ostream &o)
+string getOperandString(string operandInParam, SymbolTable& symbolTable)
 {
-    // TODO implement this function
+	if (regex_match(operandInParam, regex("-?[0-9]+")))
+    { // constant
+        return "$" + operandInParam;
+    }
+    else if (operandInParam[0] == '%')
+    { // register
+        return X86Strategy::registers[operandInParam];
+    }
+    else
+    { // variable
+
+        Symbol *symbol = symbolTable.getSymbol(operandInParam);
+        if (symbol != nullptr)
+        {
+			return to_string(symbol->memoryAddress) + "(%rbp)";
+        }
+    }
+	return "";
 }
 
-void generateCmpLt(const IRInstr &instruction, ostream &o)
+void generateCmp(const IRInstr &instruction, ostream &o)
 {
-    // TODO implement this function
+	vector<string> params = instruction.getParams();
+
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+
+	string leftOperand = getOperandString(params[0], *symbolTable);
+	string rightOperand = getOperandString(params[1], *symbolTable);
+	int variableOffset = 0;
+	cout << "cmpl " << rightOperand << ", " << leftOperand << endl;
+	cout << "sete %al" << endl;
 }
 
-void generateCmpLe(const IRInstr &instruction, ostream &o)
-{
-    // TODO implement this function
+void X86Strategy::generate_jump(const BasicBlock &basicBlock, ostream &o) {
+    if (basicBlock.exit_true == nullptr) // go to epilogue
+	{
+		this->generate_epilogue(o, *basicBlock.cfg);
+	}
+	else if (basicBlock.exit_false == nullptr) // conditional jump with test
+		cout << "cmpl %al, $0" << endl;
+		cout << "je 	." << basicBlock.exit_false->label << " # jump to false branch" << endl;
+	else { // unconditional jump
+		cout << "jmp	." << basicBlock.exit_true->label << " # jump to final branch" << endl;
+	}
 }
 
 void generateReturnVar(const IRInstr &instruction, ostream &o)
@@ -533,13 +566,22 @@ void X86Strategy::generate_assembly(const IRInstr &instruction, ostream &o)
         generateCall(instruction, o);
         break;
     case (IRInstr::Operation::cmp_eq):
-        generateCmpEq(instruction, o);
+        generateCmp(instruction, o);
+        break;
+    case (IRInstr::Operation::cmp_ne):
+        generateCmp(instruction, o);
         break;
     case (IRInstr::Operation::cmp_lt):
-        generateCmpLt(instruction, o);
+        generateCmp(instruction, o);
         break;
     case (IRInstr::Operation::cmp_le):
-        generateCmpLe(instruction, o);
+        generateCmp(instruction, o);
+        break;
+	case (IRInstr::Operation::cmp_gt):
+        generateCmp(instruction, o);
+        break;
+	case (IRInstr::Operation::cmp_ge):
+        generateCmp(instruction, o);
         break;
     case (IRInstr::Operation::returnVar):
         generateReturnVar(instruction, o);
