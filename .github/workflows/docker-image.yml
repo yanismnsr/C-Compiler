@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: Build & test
 
 on:
   push
@@ -10,6 +10,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+      - uses: actions/checkout@v3
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag ifcc:$(date +%s)
+
+  test:
+    name: Run test suite
+    runs-on: ifcc
+
+    steps:
+      - name: Checkout code
+        run: /usr/bin/tests/ifcc-test.py .
