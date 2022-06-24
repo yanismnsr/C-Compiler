@@ -23,9 +23,7 @@ public:
 
 	CodeGenVisitor(BackendStrategy * backendStrategy);
 
-	virtual std::any visitProgBegin(ifccParser::ProgBeginContext *ctx) override;
-
-	virtual std::any visitProgEnd(ifccParser::ProgEndContext *context) override;
+	virtual std::any visitProg(ifccParser::ProgContext *ctx) override;
 
 	virtual std::any visitDeclaration(ifccParser::DeclarationContext *ctx) override;
 
@@ -37,9 +35,11 @@ public:
 
 	virtual std::any visitParenthesis(ifccParser::ParenthesisContext *ctx) override;
 
-	virtual std::any visitIf(ifccParser::IfContext *ctx) override;
+  	virtual std::any visitIfInstr(ifccParser::IfInstrContext *ctx) override;
 
-	virtual std::any visitElse(ifccParser::elseContext *ctx) override;
+	virtual std::any visitBlock(ifccParser::BlockContext *ctx) override ;
+
+	virtual std::any visitComparison(ifccParser::ComparisonContext *ctx) override;
 
 	virtual std::any visitExprConst(ifccParser::ExprConstContext *ctx) override;
 
@@ -49,10 +49,10 @@ public:
 
 	virtual std::any visitUnaryExpression(ifccParser::UnaryExpressionContext *ctx) override;
 
+	virtual std::any visitElseInstr(ifccParser::ElseInstrContext *ctx) override;
+
 	const CFG & getCFG() const;
 
 	SymbolTable * getSymbolTableOfCurrentBlock();
 
 };
-
-// virtual std::any visitDeclareVar(ifccParser::DeclareVarContext *ctx) override ;

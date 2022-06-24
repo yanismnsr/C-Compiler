@@ -2,13 +2,12 @@ grammar ifcc;
 
 axiom : prog ;
 
-prog : progBegin (instruction ';')* progEnd ;
+prog : 'int' 'main' '(' ')' block ;
 
 instruction :
     returnexp                   # ret
     | declaration               # declareVar
     | affectation               # affect
-    | if                        # ifInstr
     ;
 
 returnexp :
@@ -22,11 +21,11 @@ affectation :
     IDENTIFIER '=' expr
     ;
 
-if: 'if' '(' expr ')' (instruction | block) else? ;
+ifInstr: 'if' '(' expr ')' instruction elseInstr? ;
 
-else: 'else' (instruction | block | if) ;
+elseInstr: 'else' (instruction | ifInstr) ;
 
-block : '{' instruction* '}' ;
+block : '{' ( (instruction ';') | block | ifInstr )*  '}' ;
 
 expr:
     IDENTIFIER                      # exprIdentifier
@@ -35,10 +34,11 @@ expr:
     | expr op=(MULT | DIV) expr     # multdiv
     | expr op=(ADD | MINUS) expr    # addmin
     | '(' expr ')'                  # parenthesis
+    | expr comparisonoperator expr  # comparison
     ;
 
-progBegin : 'int' 'main' '(' ')' '{' ;
-progEnd : '}' ;
+comparisonoperator : 
+    '==' | '<' | '>' | '<=' | '>=' | '!=';
 
 
 type :
