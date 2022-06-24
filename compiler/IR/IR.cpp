@@ -8,17 +8,25 @@ using namespace std;
 CFG::CFG() {
     this->nextBBnumber = 0;
     this->nextFreeSymbolIndex = -4;
+    this->current_bb = nullptr;
 }
 
-CFG::CFG(BackendStrategy * backendStrategy) {
+CFG::CFG(BackendStrategy * backendStrategy, string functionName) {
     this->nextBBnumber = 0;
     this->nextFreeSymbolIndex = -4;
     this->backend = backendStrategy;
+    this->functionName = functionName;
+    this->current_bb = nullptr;
 }
 
 void CFG::add_bb(BasicBlock* bb) {
     this->bbs.push_back(bb);
+    if (this->current_bb != nullptr) {
+        bb->exit_true = this->current_bb->exit_true;
+        this->current_bb->exit_true = bb;
+    } 
     this->current_bb = bb;
+    
 }
 
 void CFG::add_to_symbol_table (string name, Type *t) {
@@ -54,7 +62,7 @@ void CFG::gen_asm(ostream& o) const {
 }
 
 void CFG::gen_asm_prologue(ostream& o) const {
-    this->backend->generate_prologue(o);
+    this->backend->generate_prologue(o, *this);
 }
 
 void CFG::gen_asm_epilogue(ostream& o) const {
@@ -78,12 +86,18 @@ bool CFG::getHasError() const {
     return this->hasError; 
 }
 
+string CFG::getFunctionName() const {
+    return this->functionName;
+}
+
 
 // Basic block
 BasicBlock::BasicBlock(CFG* cfg, string entry_label) {
     this->cfg = cfg;
     this->label = entry_label;
     this->symbolTable = new SymbolTable(this);
+    this->exit_true = nullptr;
+    this->exit_false = nullptr;
 }
 
 BasicBlock::BasicBlock(CFG* cfg, string entry_label, const BasicBlock & parentBasicBlock) {
@@ -97,8 +111,18 @@ void BasicBlock::add_IRInstr(IRInstr::Operation op, Type * t, vector<string> par
 }
 
 void BasicBlock::gen_asm(ostream &o, BackendStrategy *backend) {
+    if (this->label != "prologue") {
+        o << this->label << ":" << endl;
+    }
     for (IRInstr* instr : this->instrs) {
         instr->gen_asm(o, backend);
+    }
+    if (this->exit_true == nullptr) {
+        backend->generate_epilogue(o, *(this->cfg));
+    } else if (this->exit_false == nullptr) {
+        // TODO unconditional jumb to exit_true
+    } else {
+        // TODO 
     }
 }
 

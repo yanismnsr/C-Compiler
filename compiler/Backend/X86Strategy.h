@@ -14,7 +14,7 @@ public:
 
     virtual void generate_assembly(const IRInstr &instruction, ostream &o);
 
-    virtual void generate_prologue(ostream &o);
+    virtual void generate_prologue(ostream &o, const CFG & cfg);
 
     virtual void generate_epilogue(ostream &o, const CFG & cfg);
 

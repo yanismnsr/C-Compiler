@@ -10,6 +10,7 @@ map<string, string> X86Strategy::registers = {
     {"%sp", "%rsp"},
     {"%reg32", "%eax"},
     {"%reg64", "%rax"},
+    {"%bool", "%al"}
 };
 
 void generatePushq(const IRInstr &instruction, ostream &o)
@@ -129,13 +130,13 @@ void generateLdconst(const IRInstr &instruction, ostream &o)
     if (destination[0] == '%')
     {
         string mappedDestination = X86Strategy::registers[destination];
-        o << "        movl    $" << constValue << ", " << mappedDestination << endl;
+        o << "  movl    $" << constValue << ", " << mappedDestination << endl;
     }
     else
     {
         SymbolTable * symbolTable = instruction.getSymbolTable();
         int destinationAddress = symbolTable->getSymbol(destination)->memoryAddress;
-        o << "        movl    $" << constValue << ", " << destinationAddress << "(%rbp)" << endl;
+        o << "  movl    $" << constValue << ", " << destinationAddress << "(%rbp)" << endl;
     }
 }
 
@@ -523,7 +524,7 @@ void generateReturnVar(const IRInstr &instruction, ostream &o)
     Symbol *symbol = symbolTable->getSymbol(variable);
 
     // Move symbol to %eax
-    o << "        movl    " << symbol->memoryAddress << "(%rbp), %eax" << endl;
+    o << "  movl    " << symbol->memoryAddress << "(%rbp), %eax" << endl;
 }
 
 void X86Strategy::generate_assembly(const IRInstr &instruction, ostream &o)
@@ -600,25 +601,20 @@ void X86Strategy::generate_assembly(const IRInstr &instruction, ostream &o)
     }
 }
 
-void X86Strategy::generate_prologue(ostream &o)
+void X86Strategy::generate_prologue(ostream &o, const CFG & cfg)
 {
-    // detect and adapt for MAC_OS specificity
-    string main = "main";
+    string functionName = cfg.getFunctionName();
 
-#ifdef __APPLE__
-    main = "_main";
-#endif
-
-    o << ".globl	" << main << "\n"
-      << main << ": \n"
-                 "	pushq	%rbp\n"
-                 "	movq	%rsp, %rbp\n";
+    o << ".globl	" << functionName << "\n"
+      << functionName << ": \n"
+                 "  pushq	%rbp\n"
+                 "  movq	%rsp, %rbp\n";
 }
 
 void X86Strategy::generate_epilogue(ostream &o, const CFG &cfg)
 {
-    cout << "	movq	%rbp, %rsp\n"
-         << "	popq	%rbp\n";
+    cout << "   movq	%rbp, %rsp\n"
+         << "   popq	%rbp\n";
 
     if (cfg.isReturnStatementPresent())
     {
@@ -626,7 +622,7 @@ void X86Strategy::generate_epilogue(ostream &o, const CFG &cfg)
     }
     else
     {
-        cout << "	retq\n";
+        cout << "   retq\n";
     }
 
     SymbolTable * symbolTable = cfg.current_bb->symbolTable;
