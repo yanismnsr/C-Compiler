@@ -47,7 +47,6 @@ Symbol& SymbolTable::addVariable(string variableName)
 		cerr << "Variable \'" + variableName + "\' already exists." << endl;
 		this->basicBlock->cfg->errorFound();
 	}
-
 	return *(variableToMemoryMap[variableName]);
 }
 
@@ -61,7 +60,6 @@ Symbol& SymbolTable::addTemporaryVariable()
 
 Symbol* SymbolTable::getSymbol(string variableName)
 {
-
 	bool found = false;
 	SymbolTable * st = this;
 	Symbol* symbol;
@@ -107,11 +105,17 @@ void SymbolTable::checkAreAllDeclaredVariablesUsedAndInitialized()
 
 void SymbolTable::setVariableIsInitialized(string variableName, bool isInitialized) 
 {
-	Symbol* symbol = variableToMemoryMap.find(variableName) == variableToMemoryMap.end() ? nullptr : variableToMemoryMap.find(variableName)->second;
-	if (symbol != nullptr) 
-	{
-		variableToMemoryMap.find(variableName)->second->isInitialized = isInitialized;
-	}
+	bool found = false;
+	SymbolTable * st = this;
+	Symbol* symbol;
+	while (st != nullptr && !found) {
+		symbol = st->variableToMemoryMap.find(variableName) == st->variableToMemoryMap.end() ? nullptr : st->variableToMemoryMap.find(variableName)->second;
+		if (symbol != nullptr) {
+			found = true;
+			symbol->isInitialized = true;
+		}
+		st = st->parentSymbolTable;
+	}	
 }
 
 
