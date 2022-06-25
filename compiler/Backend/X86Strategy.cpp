@@ -111,10 +111,12 @@ void generateCopy(const IRInstr &instruction, ostream &o)
     }
     else
     { // variable to variable
-        int parameter1Address = symbolTable->getSymbol(param1)->memoryAddress;
-        int parameter2Address = symbolTable->getSymbol(param2)->memoryAddress;
-        o << "  movl    " << parameter1Address << "(%rbp), %eax" << endl;
-        o << "  movl    %eax, " << parameter2Address << "(%rbp)" << endl;
+        Symbol* symbol1 = symbolTable->getSymbol(param1);
+        Symbol* symbol2 = symbolTable->getSymbol(param2);
+        int parameter1Address = symbol1->memoryAddress;
+        int parameter2Address = symbol2->memoryAddress;
+        o << "  movl    " << parameter1Address << "(%rbp), %eax     # variable " << symbol1->symbolName << endl;
+        o << "  movl    %eax, " << parameter2Address << "(%rbp)     # variable " << symbol2->symbolName << endl;
     }
 }
 
@@ -135,8 +137,9 @@ void generateLdconst(const IRInstr &instruction, ostream &o)
     else
     {
         SymbolTable * symbolTable = instruction.getSymbolTable();
-        int destinationAddress = symbolTable->getSymbol(destination)->memoryAddress;
-        o << "  movl    $" << constValue << ", " << destinationAddress << "(%rbp)" << endl;
+        Symbol* symbol = symbolTable->getSymbol(destination);
+        int destinationAddress = symbol->memoryAddress;
+        o << "  movl    $" << constValue << ", " << destinationAddress << "(%rbp)   # variable " << symbol->symbolName << endl;
     }
 }
 
@@ -157,11 +160,11 @@ void generateWmem(const IRInstr &instruction, ostream &o)
     { // param1 is a register
         // Mapping
         string mappedParameter1 = X86Strategy::registers[param1];
-        o << "  movl    " << mappedParameter1 << ", " << symbol->memoryAddress << "(%rbp)" << endl;
+        o << "  movl    " << mappedParameter1 << ", " << symbol->memoryAddress << "(%rbp)   # variable " << symbol->symbolName << endl;
     }
     else
     { // param1 is a constant
-        o << "  movl    $" << param1 << ", " << symbol->memoryAddress << "(%rbp)" << endl;
+        o << "  movl    $" << param1 << ", " << symbol->memoryAddress << "(%rbp)    # variable " << symbol->symbolName << endl;
     }
 }
 
@@ -174,6 +177,7 @@ void generateRmem(const IRInstr &instruction, ostream &o)
     // Param1 : variable name
     string variable = params[0];
 
+    Symbol * symbol = symbolTable->getSymbol(variable);
     int variableOffset = symbolTable->getSymbol(variable)->memoryAddress;
 
     // Param2 : destination register
@@ -181,7 +185,7 @@ void generateRmem(const IRInstr &instruction, ostream &o)
     string mappedDestination = X86Strategy::registers[destination];
 
     // Generate assembly
-    o << "  movl    " << variableOffset << "(%rbp), " << mappedDestination << endl;
+    o << "  movl    " << variableOffset << "(%rbp), " << mappedDestination << "     # variable " << symbol->symbolName << endl;
 }
 
 void generateAdd(const IRInstr &instruction, ostream &o)
@@ -237,7 +241,7 @@ void generateAdd(const IRInstr &instruction, ostream &o)
         if (symbol != nullptr)
         {
             int variableOffset = symbol->memoryAddress;
-            o << "  addl    " << variableOffset << "(%rbp), %eax" << endl;
+            o << "  addl    " << variableOffset << "(%rbp), %eax    #variable " << symbol->symbolName << endl;
         }
     }
 
@@ -255,7 +259,7 @@ void generateAdd(const IRInstr &instruction, ostream &o)
         if (symbol != nullptr)
         {
             int variableOffset = symbol->memoryAddress;
-            o << "  movl    %eax, " << variableOffset << "(%rbp)" << endl;
+            o << "  movl    %eax, " << variableOffset << "(%rbp)    #variable " << symbol->symbolName << endl;
         }
     }
 }
@@ -286,7 +290,7 @@ void generateSub(const IRInstr &instruction, ostream &o)
         if (symbol != nullptr)
         {
             int variableOffset = symbol->memoryAddress;
-            o << "  movl    " << variableOffset << "(%rbp), %eax" << endl;
+            o << "  movl    " << variableOffset << "(%rbp), %eax    #variable " << symbol->symbolName << endl;
         }
     }
 
@@ -306,7 +310,7 @@ void generateSub(const IRInstr &instruction, ostream &o)
         Symbol *symbol = symbolTable->getSymbol(operand2);
         if (symbol != nullptr){
             int variableOffset = symbol->memoryAddress;
-            o << "  subl    " << variableOffset << "(%rbp), %eax" << endl;
+            o << "  subl    " << variableOffset << "(%rbp), %eax    #variable " << symbol->symbolName << endl;
         }
     }
 
@@ -319,7 +323,7 @@ void generateSub(const IRInstr &instruction, ostream &o)
         Symbol *symbol = symbolTable->getSymbol(destination);
         if (symbol != nullptr){
             int variableOffset = symbol->memoryAddress;
-            o << "  movl    %eax, " << variableOffset << "(%rbp)" << endl;
+            o << "  movl    %eax, " << variableOffset << "(%rbp)    #variable " << symbol->symbolName << endl;
         }
     }
 }
@@ -350,7 +354,7 @@ void generateMul(const IRInstr &instruction, ostream &o)
         Symbol *symbol = symbolTable->getSymbol(operand1);
         if (symbol != nullptr){
             int variableOffset = symbol->memoryAddress;
-            o << "  movl    " << variableOffset << "(%rbp), %eax" << endl;
+            o << "  movl    " << variableOffset << "(%rbp), %eax    #variable " << symbol->symbolName << endl;
         }
     }
 
@@ -369,7 +373,7 @@ void generateMul(const IRInstr &instruction, ostream &o)
         Symbol *symbol = symbolTable->getSymbol(operand2);
         if (symbol != nullptr){
             int variableOffset = symbol->memoryAddress;
-            o << "  imull    " << variableOffset << "(%rbp), %eax   #variable  " << endl;
+            o << "  imull    " << variableOffset << "(%rbp), %eax   #variable " << symbol->symbolName << endl;
         }
     }
 
@@ -383,7 +387,7 @@ void generateMul(const IRInstr &instruction, ostream &o)
         Symbol *symbol = symbolTable->getSymbol(destination);
         if (symbol != nullptr){
             int variableOffset = symbol->memoryAddress;
-            o << "  movl    %eax, " << variableOffset << "(%rbp)" << endl;
+            o << "  movl    %eax, " << variableOffset << "(%rbp)        #variable " << symbol->symbolName << endl;
         }
     }
 }
@@ -414,7 +418,7 @@ void generateDiv(const IRInstr &instruction, ostream &o)
         if (symbol != nullptr)
         {
             int variableOffset = symbol->memoryAddress;
-            o << "  movl    " << variableOffset << "(%rbp), %eax" << endl;
+            o << "  movl    " << variableOffset << "(%rbp), %eax        # variable " << symbol->symbolName << endl;
         }
     }
 
@@ -439,7 +443,7 @@ void generateDiv(const IRInstr &instruction, ostream &o)
         if (symbol != nullptr)
         {
             int variableOffset = symbol->memoryAddress;
-            o << "  idivl    " << variableOffset << "(%rbp)   #variable  " << endl;
+            o << "  idivl    " << variableOffset << "(%rbp)   #variable " << symbol->symbolName << endl;
         }
     }
 
@@ -514,7 +518,7 @@ void generateCmpeq(const IRInstr & instruction, ostream &o) {
         if (symbol != nullptr)
         {
             int variableOffset = symbol->memoryAddress;
-            o << "  movl    " << variableOffset << "(%rbp), %eax" << endl;
+            o << "  movl    " << variableOffset << "(%rbp), %eax    # variable " << symbol->symbolName << endl;
         }
     }
 
@@ -538,7 +542,7 @@ void generateCmpeq(const IRInstr & instruction, ostream &o) {
         if (symbol != nullptr)
         {
             int variableOffset = symbol->memoryAddress;
-            o << "  cmpl    " << variableOffset << "(%rbp), %eax" << endl;
+            o << "  cmpl    " << variableOffset << "(%rbp), %eax        # variable " << symbol->symbolName << endl;
         }
     }
 
@@ -562,9 +566,75 @@ void generateCmpeq(const IRInstr & instruction, ostream &o) {
         if (symbol != nullptr)
         {
             int variableOffset = symbol->memoryAddress;
-            o << "  movl    %eax, " << variableOffset << "(%rbp)" << endl;
+            o << "  movl    %eax, " << variableOffset << "(%rbp)        # variable " << symbol->symbolName << endl;
         }
     }
+}
+
+void generateOrop(const IRInstr & instruction, ostream &o) {
+    // dest = variable1 | variable1
+
+    vector<string> params = instruction.getParams();
+
+    string destination = params[0];
+    string op1 = params[1];
+    string op2 = params[2];
+
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+
+    // Operand 1
+    if (regex_match(op1, regex("-?[0-9]+")))
+    { // constant
+        o << "  movl    $" << op1 << ", %eax" << endl;
+    }
+    else if (op1[0] == '%')
+    { // register
+        string mappedRegister = X86Strategy::registers[op1];
+        o << "  movl    " << mappedRegister << ", %eax" << endl;
+    }
+    else
+    { // variable
+
+        Symbol *symbol = symbolTable->getSymbol(op1);
+        if (symbol != nullptr)
+        {
+            int variableOffset = symbol->memoryAddress;
+            o << "  movl    " << variableOffset << "(%rbp), %eax    # variable " << symbol->symbolName << endl;
+        }
+    }
+
+    // Operand 2
+    if (regex_match(op2, regex("-?[0-9]+")))
+    { // constant
+        o << "  movl    $" << op1 << ", %edx" << endl;
+    }
+    else if (op1[0] == '%')
+    { // register
+        string mappedRegister = X86Strategy::registers[op1];
+        o << "  movl    " << mappedRegister << ", %edx" << endl;
+    }
+    else
+    { // variable
+
+        Symbol *symbol = symbolTable->getSymbol(op1);
+        if (symbol != nullptr)
+        {
+            int variableOffset = symbol->memoryAddress;
+            o << "  movl    " << variableOffset << "(%rbp), %edx    # variable " << symbol->symbolName << endl;
+        }
+    }
+
+    o << "  orl     %edx, %eax" << endl;
+    o << "  movzbl  %al, %eax" << endl;
+
+    Symbol * destinationSymbol = symbolTable->getSymbol(destination);
+    int offset = destinationSymbol->memoryAddress;
+    o << "  movl    " << offset << "(%rbp), %edx    # variable " << destinationSymbol->symbolName << endl;
+
+}
+
+void generateAndop(const IRInstr & instruction, ostream &o) {
+    
 }
 
 void generateCmpne(const IRInstr & instruction, ostream &o) {
@@ -610,7 +680,7 @@ void X86Strategy::generate_jump(const BasicBlock &basicBlock, ostream &o) {
         o << "  jmp " << basicBlock.exit_true->label << " # unconditional jump to true block" << endl;
     } else { // Conditional jump
 		// o << "  cmpl    $0, %al" << endl;
-		o << "  je  " << basicBlock.exit_false->label << " # jump to false branch" << endl;
+		o << "  jne  " << basicBlock.exit_false->label << " # jump to false branch" << endl;
 	}
 }
 
@@ -696,6 +766,12 @@ void X86Strategy::generate_assembly(const IRInstr &instruction, ostream &o)
         break;
     case (IRInstr::Operation::retq):
         generateRetq(instruction, o);
+        break;
+    case (IRInstr::Operation::orop):
+        generateOrop(instruction, o);
+        break;
+    case (IRInstr::Operation::andop):
+        generateAndop(instruction, o);
         break;
     default:
         cerr << "Unsupported instruction";

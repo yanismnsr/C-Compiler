@@ -49,7 +49,13 @@ std::any CodeGenVisitor::visitIfInstr(ifccParser::IfInstrContext *ctx)
 	// Generate if basic block 
 	BasicBlock * ifBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
 	this->cfg.add_bb(ifBb);
- 	auto result = visit(ctx->comparison());
+ 	string testResultVariableName = any_cast<string>(visit(ctx->comparison()));
+
+	Symbol tempVariable = currentBasicBlock->symbolTable->addTemporaryVariable();
+	PrimitiveType *pt = PrimitiveType::getInstance();
+	Type *boolType = pt->getType("bool");
+	ifBb->add_IRInstr(IRInstr::Operation::cmp_eq, boolType, {tempVariable.symbolName, testResultVariableName, "0"});
+	
 
 	// Generate true block
 	BasicBlock * trueBlock = new BasicBlock(&cfg, cfg.new_BB_name(), *this->cfg.current_bb);
@@ -60,6 +66,7 @@ std::any CodeGenVisitor::visitIfInstr(ifccParser::IfInstrContext *ctx)
 	} else {
 		visit(ctx->block());
 	}
+	
 
 	// Else default block
 	BasicBlock * defaultBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
@@ -71,7 +78,7 @@ std::any CodeGenVisitor::visitIfInstr(ifccParser::IfInstrContext *ctx)
 		BasicBlock * falseBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
 		this->cfg.add_exit_falseBB(ifBb, falseBb, defaultBb);
 		this->previousBlockIsIfBlock = true;
-		result = visit(ctx->elseInstr());
+		visit(ctx->elseInstr());
 
 	} else {
 		ifBb->exit_false = defaultBb;
@@ -80,7 +87,7 @@ std::any CodeGenVisitor::visitIfInstr(ifccParser::IfInstrContext *ctx)
 	this->cfg.current_bb = defaultBb;
 	this->endOfBlock = true;
 
-	return result;
+	return (string)testResultVariableName;
 }
 
 std::any CodeGenVisitor::visitBlock(ifccParser::BlockContext *ctx)
@@ -105,8 +112,6 @@ std::any CodeGenVisitor::visitBlock(ifccParser::BlockContext *ctx)
 
 std::any CodeGenVisitor::visitSimpleComparison(ifccParser::SimpleComparisonContext *ctx)
 {
-	// TODO implement this function
-
 	
 	BasicBlock * currentBb = this->cfg.current_bb;
 	// get comparisonOperator
@@ -120,20 +125,21 @@ std::any CodeGenVisitor::visitSimpleComparison(ifccParser::SimpleComparisonConte
 	SymbolTable *symbolTable = this->getSymbolTableOfCurrentBlock();
 	Symbol symbol = symbolTable->addTemporaryVariable();	
 
+	PrimitiveType *pt = PrimitiveType::getInstance();
+	Type *boolType = pt->getType("bool");
+
 	if (comparisonOperator == "==") {
-		PrimitiveType *pt = PrimitiveType::getInstance();
-		Type *boolType = pt->getType("bool");
 		currentBb->add_IRInstr(IRInstr::Operation::cmp_eq, boolType, {symbol.symbolName, operand1, operand2});
 	} else if (comparisonOperator == "<") {
-
+		currentBb->add_IRInstr(IRInstr::Operation::cmp_lt, boolType, {symbol.symbolName, operand1, operand2});
 	} else if (comparisonOperator == "<=") {
-
+		currentBb->add_IRInstr(IRInstr::Operation::cmp_le, boolType, {symbol.symbolName, operand1, operand2});
 	} else if (comparisonOperator == ">") {
-
+		currentBb->add_IRInstr(IRInstr::Operation::cmp_gt, boolType, {symbol.symbolName, operand1, operand2});
 	} else if (comparisonOperator == ">=") {
-
+		currentBb->add_IRInstr(IRInstr::Operation::cmp_ge, boolType, {symbol.symbolName, operand1, operand2});
 	} else if (comparisonOperator == "!=") {
-
+		currentBb->add_IRInstr(IRInstr::Operation::cmp_ne, boolType, {symbol.symbolName, operand1, operand2});
 	}
 
 	return (string)symbol.symbolName;
@@ -145,7 +151,28 @@ std::any CodeGenVisitor::visitUnaryComparison(ifccParser::UnaryComparisonContext
 
 std::any CodeGenVisitor::visitMultipleOperatorsComparison(ifccParser::MultipleOperatorsComparisonContext *ctx) {
 	// TODO implement this function
-	return visitChildren(ctx);
+
+	BasicBlock * currentBb = this->cfg.current_bb;
+
+	string operand1 = any_cast<string>(visit(ctx->comparison(0)));
+	string operand2 = any_cast<string>(visit(ctx->comparison(1)));
+
+	// Temporary variable
+	SymbolTable *symbolTable = this->getSymbolTableOfCurrentBlock();
+	Symbol symbol = symbolTable->addTemporaryVariable();
+
+	string comparisonOperator = ctx->CONDOPERATORS()->getText();
+
+	PrimitiveType *pt = PrimitiveType::getInstance();
+	Type *boolType = pt->getType("bool");
+
+	if (comparisonOperator == "&") {
+		currentBb->add_IRInstr(IRInstr::Operation::andop, boolType, {symbol.symbolName, operand1, operand2});
+	} else if (comparisonOperator == "|"){
+		currentBb->add_IRInstr(IRInstr::Operation::orop, boolType, {symbol.symbolName, operand1, operand2});
+	}
+
+	return (string) symbol.symbolName;
 }
 
 
@@ -172,7 +199,6 @@ std::any CodeGenVisitor::visitReturnexp(ifccParser::ReturnexpContext *ctx)
 
 std::any CodeGenVisitor::visitDeclaration(ifccParser::DeclarationContext *ctx)
 {
-
 	SymbolTable *symbolTable = this->getSymbolTableOfCurrentBlock();
 
 	std::vector<antlr4::tree::TerminalNode *> onlyDeclarations = ctx->IDENTIFIER();
