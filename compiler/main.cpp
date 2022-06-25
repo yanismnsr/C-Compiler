@@ -77,5 +77,12 @@ int main(int argn, const char **argv)
     v.visit(tree);
     v.getCFG().gen_asm(cout);
 
+    SymbolTable * symbolTable = v.getCFG().current_bb->symbolTable;
+    symbolTable->checkAreAllDeclaredVariablesUsedAndInitialized();
+    if (v.getCFG().getHasError())
+    {
+        throw std::runtime_error("");
+    }
+
     return 0;
 }

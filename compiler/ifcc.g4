@@ -4,6 +4,8 @@ axiom : prog ;
 
 prog : 'int' 'main' '(' ')' block ;
 
+instr : instruction;
+
 instruction :
     returnexp                   # ret
     | declaration               # declareVar
@@ -21,11 +23,11 @@ affectation :
     IDENTIFIER '=' expr
     ;
 
-ifInstr: 'if' '(' expr ')' (instruction | block) elseInstr? ;
+ifInstr: 'if' '(' comparison ')' (instr | block) elseInstr? ;
 
-elseInstr: 'else' (instruction | ifInstr) ;
+elseInstr: 'else' (instr | ifInstr | block) ;
 
-block : '{' ( (instruction ';') | block | ifInstr )*  '}' ;
+block : '{' ( (instr ';') | block | ifInstr )*  '}' ;
 
 expr:
     IDENTIFIER                                                                              # exprIdentifier
@@ -34,19 +36,21 @@ expr:
     | expr op=(MULT | DIV) expr                                                             # multdiv
     | expr op=(ADD | MINUS) expr                                                            # addmin
     | '(' expr ')'                                                                          # parenthesis
-    | expr comparisonoperator expr (CONDOPERATORS expr comparisonoperator expr)*            # condition
     ;
 
 
+
 comparison : 
-    expr comparisonoperator expr
+    expr                                            # unaryComparison
+    | expr COMPARISONOPERATOR expr                  # simpleComparison
+    | comparison CONDOPERATORS comparison           # multipleOperatorsComparison
     ;
 
 CONDOPERATORS :
     '&&' | '||'
     ;
 
-comparisonoperator : 
+COMPARISONOPERATOR : 
     '==' | '<' | '>' | '<=' | '>=' | '!=';
 
 

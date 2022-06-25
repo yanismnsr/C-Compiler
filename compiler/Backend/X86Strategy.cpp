@@ -213,7 +213,7 @@ void generateAdd(const IRInstr &instruction, ostream &o)
         if (symbol != nullptr)
         {
             int variableOffset = symbol->memoryAddress;
-            o << "  movl    " << variableOffset << "(%rbp), %eax" << endl;
+            o << "  movl    " << variableOffset << "(%rbp), %eax        # variable " << symbol->symbolName << endl;
         }
     }
 
@@ -487,6 +487,106 @@ string getOperandString(string operandInParam, SymbolTable& symbolTable)
 	return "";
 }
 
+void generateCmpeq(const IRInstr & instruction, ostream &o) {
+    // TODO check if negative constants work
+    vector<string> params = instruction.getParams();
+
+    // Param1 : Destination 
+    string destination = params[0];
+
+    // Param2 : op1 (register, constant or variable)
+    string operand1 = params[1];
+    if (regex_match(operand1, regex("-?[0-9]+")))
+    { // constant
+        o << "  movl    $" << operand1 << ", %eax" << endl;
+    }
+    else if (operand1[0] == '%')
+    { // register
+        string mappedRegister = X86Strategy::registers[operand1];
+        o << "  movl    " << mappedRegister << ", %eax" << endl;
+    }
+    else
+    { // variable
+
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+
+        Symbol *symbol = symbolTable->getSymbol(operand1);
+        if (symbol != nullptr)
+        {
+            int variableOffset = symbol->memoryAddress;
+            o << "  movl    " << variableOffset << "(%rbp), %eax" << endl;
+        }
+    }
+
+    // Param3 : op2 (register, constant or variable)
+    string operand2 = params[2];
+    if (regex_match(operand2, regex("-?[0-9]+")))
+    { // constant
+        o << "  cmpl    $" << operand2 << ", %eax" << endl;
+    }
+    else if (operand2[0] == '%')
+    { // register
+        string mappedRegister = X86Strategy::registers[operand2];
+        o << "  cmpl    " << mappedRegister << ", %eax" << endl;
+    }
+    else
+    { // variable
+
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+
+        Symbol *symbol = symbolTable->getSymbol(operand2);
+        if (symbol != nullptr)
+        {
+            int variableOffset = symbol->memoryAddress;
+            o << "  cmpl    " << variableOffset << "(%rbp), %eax" << endl;
+        }
+    }
+
+    o << "  sete    %al" << endl;
+    o << "  andb    $1, %al" << endl;
+    o << "  movzbl  %al, %eax" << endl;
+
+    // Destination
+    if (destination[0] == '%')
+    { // register
+        string mappedDestination = X86Strategy::registers[destination];
+        
+        o << "  movl    %eax, " << mappedDestination << endl;
+    }
+    else
+    { // variable
+
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+
+        Symbol *symbol = symbolTable->getSymbol(destination);
+        if (symbol != nullptr)
+        {
+            int variableOffset = symbol->memoryAddress;
+            o << "  movl    %eax, " << variableOffset << "(%rbp)" << endl;
+        }
+    }
+}
+
+void generateCmpne(const IRInstr & instruction, ostream &o) {
+
+}
+
+void generateCmpgt(const IRInstr & instruction, ostream &o) {
+
+}
+
+void generateCmpge(const IRInstr & instruction, ostream &o) {
+
+}
+
+void generateCmplt(const IRInstr & instruction, ostream &o) {
+
+}
+
+void generateCmple(const IRInstr & instruction, ostream &o) {
+
+}
+
 void generateCmp(const IRInstr &instruction, ostream &o)
 {
 	vector<string> params = instruction.getParams();
@@ -496,8 +596,9 @@ void generateCmp(const IRInstr &instruction, ostream &o)
 	string leftOperand = getOperandString(params[0], *symbolTable);
 	string rightOperand = getOperandString(params[1], *symbolTable);
 	int variableOffset = 0;
-	o << "cmpl " << rightOperand << ", " << leftOperand << endl;
-	o << "sete %al" << endl;
+	o << "  cmpl    " << rightOperand << ", " << leftOperand << endl;
+	o << "  sete    %al" << endl;
+    
 }
 
 void X86Strategy::generate_jump(const BasicBlock &basicBlock, ostream &o) {
@@ -505,11 +606,11 @@ void X86Strategy::generate_jump(const BasicBlock &basicBlock, ostream &o) {
 	{
 		this->generate_epilogue(o, *basicBlock.cfg);
 	}
-	else if (basicBlock.exit_false == nullptr) { // Conditional jump
-		o << "cmpl %al, $0" << endl;
-		o << "je 	." << basicBlock.exit_false->label << " # jump to false branch" << endl;
-    } else { // unconditional jump
-		o << "jmp	." << basicBlock.exit_true->label << " # jump to final branch" << endl;
+	else if (basicBlock.exit_false == nullptr) { // Unconditional jump to exit_true
+        o << "  jmp " << basicBlock.exit_true->label << " # unconditional jump to true block" << endl;
+    } else { // Conditional jump
+		// o << "  cmpl    $0, %al" << endl;
+		o << "  je  " << basicBlock.exit_false->label << " # jump to false branch" << endl;
 	}
 }
 
@@ -567,7 +668,7 @@ void X86Strategy::generate_assembly(const IRInstr &instruction, ostream &o)
         generateCall(instruction, o);
         break;
     case (IRInstr::Operation::cmp_eq):
-        generateCmp(instruction, o);
+        generateCmpeq(instruction, o);
         break;
     case (IRInstr::Operation::cmp_ne):
         generateCmp(instruction, o);
@@ -613,6 +714,7 @@ void X86Strategy::generate_prologue(ostream &o, const CFG & cfg)
 
 void X86Strategy::generate_epilogue(ostream &o, const CFG &cfg)
 {
+
     o << "   movq	%rbp, %rsp\n"
          << "   popq	%rbp\n";
 
@@ -623,12 +725,5 @@ void X86Strategy::generate_epilogue(ostream &o, const CFG &cfg)
     else
     {
         o << "   retq\n";
-    }
-
-    SymbolTable * symbolTable = cfg.current_bb->symbolTable;
-    symbolTable->checkAreAllDeclaredVariablesUsedAndInitialized();
-    if (cfg.getHasError())
-    {
-        throw std::runtime_error("");
     }
 }

@@ -25,14 +25,14 @@ std::any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 	BasicBlock *prologue = new BasicBlock(&this->cfg, "prologue");
 	this->cfg.add_bb(prologue);
 
-	auto visitResult = visitChildren(ctx);
-
 	BasicBlock *epilogue = new BasicBlock(&this->cfg, "epilogue");
 	this->cfg.add_bb(epilogue);
 	epilogue->exit_true = nullptr;
 
 	prologue->exit_true = epilogue;
 	this->cfg.current_bb = prologue;
+
+	auto visitResult = visitChildren(ctx);
 
 	return visitResult;
 }
@@ -41,7 +41,7 @@ std::any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 
 std::any CodeGenVisitor::visitIfInstr(ifccParser::IfInstrContext *ctx)
 {
-
+	// TODO correct the chaining of the blocks
 
 	// Current basic block
 	BasicBlock *currentBasicBlock = this->cfg.current_bb;
@@ -49,39 +49,36 @@ std::any CodeGenVisitor::visitIfInstr(ifccParser::IfInstrContext *ctx)
 	// Generate if basic block 
 	BasicBlock * ifBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
 	this->cfg.add_bb(ifBb);
- 	auto result = visit(ctx->expr());
+ 	auto result = visit(ctx->comparison());
 
-	// Generate else basic block
-	BasicBlock * trueBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
-	this->cfg.add_bb(trueBb);
-	if (ctx->instruction()) {
-		visit(ctx->instruction());
+	// Generate true block
+	BasicBlock * trueBlock = new BasicBlock(&cfg, cfg.new_BB_name(), *this->cfg.current_bb);
+	this->cfg.add_bb(trueBlock);
+	this->previousBlockIsIfBlock = true;
+	if (ctx->instr()) {
+		visit(ctx->instr());
 	} else {
 		visit(ctx->block());
 	}
 
-	// Else basic block
-	BasicBlock * falseBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
-	this->cfg.add_bb(falseBb);
+	// Else default block
+	BasicBlock * defaultBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
+	this->cfg.add_bb(defaultBb);
+
 	if (ctx->elseInstr()) {
+
+		// False block
+		BasicBlock * falseBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
+		this->cfg.add_exit_falseBB(ifBb, falseBb, defaultBb);
+		this->previousBlockIsIfBlock = true;
 		result = visit(ctx->elseInstr());
 
-		// Default block
-		BasicBlock * defaultBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
-		this->cfg.add_bb(falseBb);
-
-		falseBb->exit_true = defaultBb;
-		trueBb->exit_true = defaultBb;
-
 	} else {
-		trueBb->exit_true = falseBb;
+		ifBb->exit_false = defaultBb;
 	}
 
-	// Chain blocks
-	ifBb->exit_true = trueBb;
-	ifBb->exit_false = falseBb;
-
-	
+	this->cfg.current_bb = defaultBb;
+	this->endOfBlock = true;
 
 	return result;
 }
@@ -89,25 +86,64 @@ std::any CodeGenVisitor::visitIfInstr(ifccParser::IfInstrContext *ctx)
 std::any CodeGenVisitor::visitBlock(ifccParser::BlockContext *ctx)
 {
 
-
 	// TODO implement this function
-	BasicBlock * bb = new BasicBlock(&this->cfg, this->cfg.new_BB_name(), *this->cfg.current_bb);
-	this->cfg.add_bb(bb);
+	if (!this->previousBlockIsIfBlock) {
+		BasicBlock * bb = new BasicBlock(&this->cfg, this->cfg.new_BB_name(), *this->cfg.current_bb);
+		this->cfg.add_bb(bb);
+	} else {
+		this->previousBlockIsIfBlock = false;
+	}
 
 	auto result = visitChildren(ctx);
 
-	BasicBlock * otherBb = new BasicBlock(&this->cfg, this->cfg.new_BB_name(), *this->cfg.current_bb);
-	this->cfg.add_bb(otherBb);
+	this->endOfBlock = true;
+
+	// BasicBlock * otherBb = new BasicBlock(&this->cfg, this->cfg.new_BB_name(), *this->cfg.current_bb);
+	// this->cfg.add_bb(otherBb);
 	return result;
 }
 
-std::any CodeGenVisitor::visitComparison(ifccParser::ComparisonContext *ctx)
+std::any CodeGenVisitor::visitSimpleComparison(ifccParser::SimpleComparisonContext *ctx)
 {
 	// TODO implement this function
+
+	
+	BasicBlock * currentBb = this->cfg.current_bb;
+	// get comparisonOperator
+	string comparisonOperator = ctx->COMPARISONOPERATOR()->getText();
+
+	// Get operands names 
+	string operand1 = any_cast<string>(visit(ctx->expr(0)));
+	string operand2 = any_cast<string>(visit(ctx->expr(1)));
+
+	// Temporary variable
+	SymbolTable *symbolTable = this->getSymbolTableOfCurrentBlock();
+	Symbol symbol = symbolTable->addTemporaryVariable();	
+
+	if (comparisonOperator == "==") {
+		PrimitiveType *pt = PrimitiveType::getInstance();
+		Type *boolType = pt->getType("bool");
+		currentBb->add_IRInstr(IRInstr::Operation::cmp_eq, boolType, {symbol.symbolName, operand1, operand2});
+	} else if (comparisonOperator == "<") {
+
+	} else if (comparisonOperator == "<=") {
+
+	} else if (comparisonOperator == ">") {
+
+	} else if (comparisonOperator == ">=") {
+
+	} else if (comparisonOperator == "!=") {
+
+	}
+
+	return (string)symbol.symbolName;
+}
+
+std::any CodeGenVisitor::visitUnaryComparison(ifccParser::UnaryComparisonContext *ctx) {
 	return visitChildren(ctx);
 }
 
-std::any CodeGenVisitor::visitCondition(ifccParser::ConditionContext *ctx) {
+std::any CodeGenVisitor::visitMultipleOperatorsComparison(ifccParser::MultipleOperatorsComparisonContext *ctx) {
 	// TODO implement this function
 	return visitChildren(ctx);
 }
@@ -284,7 +320,7 @@ std::any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 	bb->add_IRInstr(IRInstr::Operation::copy, intType, {rValueVariableName, variableName});
 
 	symbolTable->setVariableIsInitialized(variableName, true);
-	
+
 	return "0";
 }
 
@@ -296,4 +332,17 @@ const CFG &CodeGenVisitor::getCFG() const
 SymbolTable *CodeGenVisitor::getSymbolTableOfCurrentBlock()
 {
 	return this->cfg.current_bb->symbolTable;
+}
+
+std::any CodeGenVisitor::visitInstr(ifccParser::InstrContext *ctx) {
+
+	if (this->endOfBlock) {
+		BasicBlock * parentBB = this->cfg.current_bb->parentBb;
+		BasicBlock * newBb = new BasicBlock(&this->cfg, this->cfg.new_BB_name(), *parentBB);
+		this->cfg.add_bb(newBb);
+		this->endOfBlock = false;
+	}
+
+	return visitChildren(ctx);
+
 }

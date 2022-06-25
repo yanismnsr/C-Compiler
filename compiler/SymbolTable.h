@@ -32,16 +32,21 @@ private:
 	SymbolTable * parentSymbolTable;
 	BasicBlock * basicBlock;
 
+	int memoryOffset;
+
 	void writeWarning(string message);
 	void cleanWarningsFile();
 public:
 	SymbolTable(BasicBlock* bb);
 	SymbolTable(BasicBlock* bb, SymbolTable* parentSymbolTable);
-	Symbol& addVariable(string address);
+	Symbol& addVariable(string variableName);
 	Symbol& addTemporaryVariable();
 	Symbol* getSymbol(string variableName);
 	bool getHasError();
 	void checkAreAllDeclaredVariablesUsedAndInitialized();
 	void setVariableIsInitialized(string variableName, bool isInitialized);
+	int getNextAllowedAddress();
+
+	int getAddress(string variableName);
 };
 
