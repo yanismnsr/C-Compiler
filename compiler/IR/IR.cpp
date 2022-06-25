@@ -26,6 +26,19 @@ void CFG::add_bb(BasicBlock* bb) {
         this->current_bb->exit_true = bb;
     } 
     this->current_bb = bb;
+
+    // for (BasicBlock * bb : bb->cfg->bbs) {
+    //     if (bb->exit_true) {
+    //         cout << bb->label << " >> " << bb->exit_true->label << " :: ";
+    //     } 
+    //     if (bb->exit_false) {
+    //         cout << bb->label << " >>> " << bb->exit_false->label << " :: ";
+    //     } 
+    //     if (!bb->exit_true && !bb->exit_false) {
+    //         cout << "NA: " << bb->label << " :: ";
+    //     }
+    // }
+    // cout << endl;
     
 }
 
@@ -58,7 +71,6 @@ void CFG::gen_asm(ostream& o) const {
     for (BasicBlock* bb : this->bbs) {
         bb->gen_asm(o, this->backend);
     }
-    this->gen_asm_epilogue(o);
 }
 
 void CFG::gen_asm_prologue(ostream& o) const {
@@ -90,6 +102,26 @@ string CFG::getFunctionName() const {
     return this->functionName;
 }
 
+void CFG::add_exit_falseBB(BasicBlock * ifBb, BasicBlock * newBb, BasicBlock * defaultBb) {
+    this->bbs.push_back(newBb);
+    ifBb->exit_false = newBb;
+    newBb->exit_true = defaultBb;
+    this->current_bb = newBb;
+
+    // for (BasicBlock * bb : ifBb->cfg->bbs) {
+    //     if (bb->exit_true) {
+    //         cout << bb->label << " >> " << bb->exit_true->label << " :: ";
+    //     } 
+    //     if (bb->exit_false) {
+    //         cout << bb->label << " >>> " << bb->exit_false->label << " :: ";
+    //     } 
+    //     if (!bb->exit_true && !bb->exit_false) {
+    //         cout << "NA: " << bb->label << " :: ";
+    //     }
+    // }
+    // cout << endl;
+}
+
 
 // Basic block
 BasicBlock::BasicBlock(CFG* cfg, string entry_label) {
@@ -98,12 +130,14 @@ BasicBlock::BasicBlock(CFG* cfg, string entry_label) {
     this->symbolTable = new SymbolTable(this);
     this->exit_true = nullptr;
     this->exit_false = nullptr;
+    this->parentBb = nullptr;
 }
 
-BasicBlock::BasicBlock(CFG* cfg, string entry_label, const BasicBlock & parentBasicBlock) {
+BasicBlock::BasicBlock(CFG* cfg, string entry_label, BasicBlock & parentBasicBlock) {
     this->cfg = cfg;
     this->label = entry_label;
     this->symbolTable = new SymbolTable(this, parentBasicBlock.symbolTable);
+    this->parentBb = &parentBasicBlock;
 }
 
 void BasicBlock::add_IRInstr(IRInstr::Operation op, Type * t, vector<string> params) {
@@ -117,13 +151,8 @@ void BasicBlock::gen_asm(ostream &o, BackendStrategy *backend) {
     for (IRInstr* instr : this->instrs) {
         instr->gen_asm(o, backend);
     }
-    if (this->exit_true == nullptr) {
-        backend->generate_epilogue(o, *(this->cfg));
-    } else if (this->exit_false == nullptr) {
-        // TODO unconditional jumb to exit_true
-    } else {
-        // TODO 
-    }
+    
+    backend->generate_jump(*this, o);
 }
 
 // IRInstr

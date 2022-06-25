@@ -15,3 +15,7 @@ void ARMStrategy::generate_prologue(ostream &o, const CFG & cfg) {
 void ARMStrategy::generate_epilogue(ostream &o, const CFG & cfg) {
     // TODO implement this function
 }
+
+void ARMStrategy::generate_jump(const BasicBlock &basicBlock, ostream &o) {
+    // TODO implement this function
+}

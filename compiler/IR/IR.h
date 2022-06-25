@@ -60,7 +60,7 @@ Exemple de IR.h trouvé sur moodle (peut-être qu'il faut le ranger ailleurs)
  * 		* wmem constant variableName
  *
  * ## 3 parameters operations
- * 	### add, sub, mul, div,
+ * 	### add, sub, mul, div, cmp_e, cmp_ne, cmp_gt, cmp_ge, cmp_lt, cmp_le
  * 		Operand one : Destination
  * 		Operand two : op1 (register, constant or variable)
  * 		Operand three : op2 (register, constant or variable)
@@ -86,6 +86,9 @@ class IRInstr {
 		popq,
 		call,
 		cmp_eq,
+		cmp_ne,
+		cmp_gt,
+		cmp_ge,
 		cmp_lt,
 		cmp_le,
 		returnVar,
@@ -150,7 +153,7 @@ Possible optimization:
 class BasicBlock {
  public:
 	BasicBlock(CFG* cfg, string entry_label);
-	BasicBlock(CFG* cfg, string entry_label, const BasicBlock & parentBasicBlock);
+	BasicBlock(CFG* cfg, string entry_label, BasicBlock & parentBasicBlock);
 	void gen_asm(ostream &o, BackendStrategy *backend);
 
 	void add_IRInstr(IRInstr::Operation op, Type * t, vector<string> params);
@@ -163,6 +166,8 @@ class BasicBlock {
 	vector<IRInstr*> instrs; /** < the instructions themselves. */
   	string test_var_name;  /** < when generating IR code for an if(expr) or while(expr) etc,
 													 store here the name of the variable that holds the value of expr */
+
+	BasicBlock * parentBb;
 
 	SymbolTable* symbolTable;
 
@@ -190,6 +195,8 @@ class CFG {
 
 	void add_bb(BasicBlock* bb);
 
+	void add_exit_falseBB (BasicBlock * ifBb, BasicBlock * newBb, BasicBlock * defaultBb); 
+
 	// x86 code generation: could be encapsulated in a processor class in a retargetable compiler
 	void gen_asm(ostream& o) const;
 	// string IR_reg_to_asm(string reg); /**< helper method: inputs a IR reg or input variable, returns e.g. "-24(%rbp)" for the proper value of 24 */
@@ -215,6 +222,7 @@ class CFG {
 	bool getHasError() const; 
 
 	string getFunctionName() const;
+	vector <BasicBlock*> bbs; /**< all the basic blocks of this CFG*/
 
  protected:
 	map <string, Type*> SymbolType; /**< part of the symbol table  */
@@ -224,7 +232,6 @@ class CFG {
 
 	BackendStrategy * backend; /**< The assembly generation strategy. Depends on the target architecture */
 
-	vector <BasicBlock*> bbs; /**< all the basic blocks of this CFG*/
 	bool hasReturnStatement = false;
 	bool hasError = false;
 
