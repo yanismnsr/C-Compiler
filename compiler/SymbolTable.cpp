@@ -57,12 +57,13 @@ Symbol& SymbolTable::addTemporaryVariable()
 
 Symbol* SymbolTable::getSymbol(string variableName)
 {
+
 	bool found = false;
 	SymbolTable * st = this;
 	Symbol* symbol;
 
-	while (st != nullptr) {
-		symbol = variableToMemoryMap.find(variableName) == variableToMemoryMap.end() ? nullptr : variableToMemoryMap.find(variableName)->second;
+	while (st != nullptr && !found) {
+		symbol = st->variableToMemoryMap.find(variableName) == st->variableToMemoryMap.end() ? nullptr : st->variableToMemoryMap.find(variableName)->second;
 		if (symbol != nullptr) {
 			found = true;
 			symbol->isUsed = true;

@@ -496,8 +496,8 @@ void generateCmp(const IRInstr &instruction, ostream &o)
 	string leftOperand = getOperandString(params[0], *symbolTable);
 	string rightOperand = getOperandString(params[1], *symbolTable);
 	int variableOffset = 0;
-	cout << "cmpl " << rightOperand << ", " << leftOperand << endl;
-	cout << "sete %al" << endl;
+	o << "cmpl " << rightOperand << ", " << leftOperand << endl;
+	o << "sete %al" << endl;
 }
 
 void X86Strategy::generate_jump(const BasicBlock &basicBlock, ostream &o) {
@@ -505,11 +505,11 @@ void X86Strategy::generate_jump(const BasicBlock &basicBlock, ostream &o) {
 	{
 		this->generate_epilogue(o, *basicBlock.cfg);
 	}
-	else if (basicBlock.exit_false == nullptr) // conditional jump with test
-		cout << "cmpl %al, $0" << endl;
-		cout << "je 	." << basicBlock.exit_false->label << " # jump to false branch" << endl;
-	else { // unconditional jump
-		cout << "jmp	." << basicBlock.exit_true->label << " # jump to final branch" << endl;
+	else if (basicBlock.exit_false == nullptr) { // Conditional jump
+		o << "cmpl %al, $0" << endl;
+		o << "je 	." << basicBlock.exit_false->label << " # jump to false branch" << endl;
+    } else { // unconditional jump
+		o << "jmp	." << basicBlock.exit_true->label << " # jump to final branch" << endl;
 	}
 }
 
@@ -613,16 +613,16 @@ void X86Strategy::generate_prologue(ostream &o, const CFG & cfg)
 
 void X86Strategy::generate_epilogue(ostream &o, const CFG &cfg)
 {
-    cout << "   movq	%rbp, %rsp\n"
+    o << "   movq	%rbp, %rsp\n"
          << "   popq	%rbp\n";
 
     if (cfg.isReturnStatementPresent())
     {
-        cout << "	ret\n";
+        o << "	ret\n";
     }
     else
     {
-        cout << "   retq\n";
+        o << "   retq\n";
     }
 
     SymbolTable * symbolTable = cfg.current_bb->symbolTable;

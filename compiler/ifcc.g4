@@ -21,20 +21,29 @@ affectation :
     IDENTIFIER '=' expr
     ;
 
-ifInstr: 'if' '(' expr ')' instruction elseInstr? ;
+ifInstr: 'if' '(' expr ')' (instruction | block) elseInstr? ;
 
 elseInstr: 'else' (instruction | ifInstr) ;
 
 block : '{' ( (instruction ';') | block | ifInstr )*  '}' ;
 
 expr:
-    IDENTIFIER                      # exprIdentifier
-    | CONST                         # exprConst
-    | op=(MINUS | ADD) expr         # unaryExpression
-    | expr op=(MULT | DIV) expr     # multdiv
-    | expr op=(ADD | MINUS) expr    # addmin
-    | '(' expr ')'                  # parenthesis
-    | expr comparisonoperator expr  # comparison
+    IDENTIFIER                                                                              # exprIdentifier
+    | CONST                                                                                 # exprConst
+    | op=(MINUS | ADD) expr                                                                 # unaryExpression
+    | expr op=(MULT | DIV) expr                                                             # multdiv
+    | expr op=(ADD | MINUS) expr                                                            # addmin
+    | '(' expr ')'                                                                          # parenthesis
+    | expr comparisonoperator expr (CONDOPERATORS expr comparisonoperator expr)*            # condition
+    ;
+
+
+comparison : 
+    expr comparisonoperator expr
+    ;
+
+CONDOPERATORS :
+    '&&' | '||'
     ;
 
 comparisonoperator : 

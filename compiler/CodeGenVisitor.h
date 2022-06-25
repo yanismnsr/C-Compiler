@@ -51,6 +51,8 @@ public:
 
 	virtual std::any visitElseInstr(ifccParser::ElseInstrContext *ctx) override;
 
+	virtual std::any visitCondition(ifccParser::ConditionContext *ctx) override ;
+
 	const CFG & getCFG() const;
 
 	SymbolTable * getSymbolTableOfCurrentBlock();

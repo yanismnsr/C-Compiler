@@ -25,17 +25,14 @@ std::any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 	BasicBlock *prologue = new BasicBlock(&this->cfg, "prologue");
 	this->cfg.add_bb(prologue);
 
-	BasicBlock *bb = new BasicBlock(&this->cfg, this->cfg.new_BB_name());
-	this->cfg.add_bb(bb);
-
 	auto visitResult = visitChildren(ctx);
 
 	BasicBlock *epilogue = new BasicBlock(&this->cfg, "epilogue");
 	this->cfg.add_bb(epilogue);
 	epilogue->exit_true = nullptr;
 
-	bb->exit_true = epilogue;
-	prologue->exit_true = bb;
+	prologue->exit_true = epilogue;
+	this->cfg.current_bb = prologue;
 
 	return visitResult;
 }
@@ -45,42 +42,72 @@ std::any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 std::any CodeGenVisitor::visitIfInstr(ifccParser::IfInstrContext *ctx)
 {
 
+
 	// Current basic block
 	BasicBlock *currentBasicBlock = this->cfg.current_bb;
 
 	// Generate if basic block 
 	BasicBlock * ifBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
 	this->cfg.add_bb(ifBb);
-	visit(ctx->expr());
+ 	auto result = visit(ctx->expr());
 
 	// Generate else basic block
 	BasicBlock * trueBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
 	this->cfg.add_bb(trueBb);
-	visit(ctx->instruction());
+	if (ctx->instruction()) {
+		visit(ctx->instruction());
+	} else {
+		visit(ctx->block());
+	}
 
 	// Else basic block
 	BasicBlock * falseBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
 	this->cfg.add_bb(falseBb);
-	auto result = visit(ctx->elseInstr());
+	if (ctx->elseInstr()) {
+		result = visit(ctx->elseInstr());
+
+		// Default block
+		BasicBlock * defaultBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
+		this->cfg.add_bb(falseBb);
+
+		falseBb->exit_true = defaultBb;
+		trueBb->exit_true = defaultBb;
+
+	} else {
+		trueBb->exit_true = falseBb;
+	}
 
 	// Chain blocks
 	ifBb->exit_true = trueBb;
 	ifBb->exit_false = falseBb;
 
-	// Default block
-	BasicBlock * defaultBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
+	
 
 	return result;
 }
 
 std::any CodeGenVisitor::visitBlock(ifccParser::BlockContext *ctx)
 {
+
+
 	// TODO implement this function
-	return visitChildren(ctx);
+	BasicBlock * bb = new BasicBlock(&this->cfg, this->cfg.new_BB_name(), *this->cfg.current_bb);
+	this->cfg.add_bb(bb);
+
+	auto result = visitChildren(ctx);
+
+	BasicBlock * otherBb = new BasicBlock(&this->cfg, this->cfg.new_BB_name(), *this->cfg.current_bb);
+	this->cfg.add_bb(otherBb);
+	return result;
 }
 
 std::any CodeGenVisitor::visitComparison(ifccParser::ComparisonContext *ctx)
 {
+	// TODO implement this function
+	return visitChildren(ctx);
+}
+
+std::any CodeGenVisitor::visitCondition(ifccParser::ConditionContext *ctx) {
 	// TODO implement this function
 	return visitChildren(ctx);
 }
@@ -127,7 +154,7 @@ std::any CodeGenVisitor::visitDeclaration(ifccParser::DeclarationContext *ctx)
 		visit(declarationWithAffectation);
 	}
 
-	return visitChildren(ctx);
+	return 0;
 }
 
 std::any CodeGenVisitor::visitAddmin(ifccParser::AddminContext *ctx)
@@ -257,8 +284,8 @@ std::any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 	bb->add_IRInstr(IRInstr::Operation::copy, intType, {rValueVariableName, variableName});
 
 	symbolTable->setVariableIsInitialized(variableName, true);
-
-	return 0;
+	
+	return "0";
 }
 
 const CFG &CodeGenVisitor::getCFG() const
