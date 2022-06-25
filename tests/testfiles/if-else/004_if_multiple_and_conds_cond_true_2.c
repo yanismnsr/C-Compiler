@@ -4,7 +4,7 @@ int main () {
     if (a == 1 & b == 2) {
         c = 1;
     } else {
-        c=5;
+        c = 5;
     }
     return c;
 }
