@@ -344,7 +344,6 @@ std::any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 	PrimitiveType *pt = PrimitiveType::getInstance();
 	Type *intType = pt->getType("int");
 	bb->add_IRInstr(IRInstr::Operation::copy, intType, {rValueVariableName, variableName});
-
 	symbolTable->setVariableIsInitialized(variableName, true);
 
 	return "0";
