@@ -493,6 +493,19 @@ void generateCall(const IRInstr &instruction, ostream &o)
 	string functionName = instruction.getContainingBasicBlock()->label;
 	o << "call " << functionName << endl;
 }
+
+void generateNewFunction(const IRInstr &instruction, ostream &o)
+{
+	string functionName = instruction.getContainingBasicBlock()->label;
+	o << "." << functionName << endl;
+
+	vector<string> params = instruction.getParams();
+	string paramsRegisters[] = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d"};
+
+	// get each param from registers
+	for (int i = 0; i<params.size(); i++) {
+		o << "movl	" << paramsRegisters[i] << ", " << (-4 * (i + 1)) << "(%rbp)	# get param from register" << endl;
+	}
 }
 
 string getOperandString(string operandInParam, SymbolTable& symbolTable)
@@ -1073,6 +1086,9 @@ void X86Strategy::generate_assembly(const IRInstr &instruction, ostream &o)
         break;
     case (IRInstr::Operation::call):
         generateCall(instruction, o);
+        break;
+	case (IRInstr::Operation::new_function):
+        generateNewFunction(instruction, o);
         break;
     case (IRInstr::Operation::cmp_eq):
         generateCmpeq(instruction, o);
