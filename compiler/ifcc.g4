@@ -47,7 +47,7 @@ comparison :
     ;
 
 CONDOPERATORS :
-    '&&' | '||'
+    '&' | '|'
     ;
 
 COMPARISONOPERATOR : 
