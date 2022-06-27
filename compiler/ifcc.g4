@@ -2,41 +2,61 @@ grammar ifcc;
 
 axiom : prog ;
 
-prog : progBegin (intruction ';')* progEnd ;
+prog : 'int' 'main' '(' ')' block ;
 
-intruction : 
+instr : instruction;
+
+instruction :
     returnexp                   # ret
     | declaration               # declareVar
     | affectation               # affect
     ;
 
-returnexp : 
+returnexp :
     RETURN expr? ;
 
-declaration : 
+declaration :
     type (IDENTIFIER | affectation) (',' (IDENTIFIER | affectation))*
     ;
 
-affectation : 
+affectation :
     IDENTIFIER '=' expr
     ;
 
+ifInstr: 'if' '(' comparison ')' (instr | block) elseInstr? ;
+
+elseInstr: 'else' (instr | ifInstr | block) ;
+
+block : '{' ( (instr ';') | block | ifInstr )*  '}' ;
+
 expr:
-    IDENTIFIER                      # exprIdentifier   
-    | CONST                         # exprConst
-    | op=(MINUS | ADD) expr         # unaryExpression
-    | expr op=(MULT | DIV) expr     # multdiv
-    | expr op=(ADD | MINUS) expr    # addmin
-    | '(' expr ')'                  # parenthesis
+    IDENTIFIER                                                                              # exprIdentifier
+    | CONST                                                                                 # exprConst
+    | op=(MINUS | ADD) expr                                                                 # unaryExpression
+    | expr op=(MULT | DIV) expr                                                             # multdiv
+    | expr op=(ADD | MINUS) expr                                                            # addmin
+    | '(' expr ')'                                                                          # parenthesis
     ;
 
-progBegin : 'int' 'main' '(' ')' '{' ;
-progEnd : '}' ;
 
 
-type : 
+comparison : 
+    expr                                            # unaryComparison
+    | expr COMPARISONOPERATOR expr                  # simpleComparison
+    | comparison CONDOPERATORS comparison           # multipleOperatorsComparison
+    ;
+
+CONDOPERATORS :
+    '&&' | '||'
+    ;
+
+COMPARISONOPERATOR : 
+    '==' | '<' | '>' | '<=' | '>=' | '!=';
+
+
+type :
     'int'
-    | 'char' 
+    | 'char'
     | 'long'
     | 'float'
     | 'double'

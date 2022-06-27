@@ -41,6 +41,7 @@ public :
             _instance->types["float"] = new Type("float", 4);
             _instance->types["double"] = new Type("double", 8);
             _instance->types["void"] = new Type("void", 0);
+            _instance->types["bool"] = new Type("bool", 1);
         }
         return PrimitiveType::_instance;
     }

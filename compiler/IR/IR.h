@@ -60,7 +60,7 @@ Exemple de IR.h trouvé sur moodle (peut-être qu'il faut le ranger ailleurs)
  * 		* wmem constant variableName
  *
  * ## 3 parameters operations
- * 	### add, sub, mul, div,
+ * 	### add, sub, mul, div, cmp_e, cmp_ne, cmp_gt, cmp_ge, cmp_lt, cmp_le
  * 		Operand one : Destination
  * 		Operand two : op1 (register, constant or variable)
  * 		Operand three : op2 (register, constant or variable)
@@ -86,6 +86,9 @@ class IRInstr {
 		popq,
 		call,
 		cmp_eq,
+		cmp_ne,
+		cmp_gt,
+		cmp_ge,
 		cmp_lt,
 		cmp_le,
 		returnVar,
@@ -130,11 +133,11 @@ class IRInstr {
 
 	 Assembly jumps are generated as follows:
 	 BasicBlock::gen_asm() first calls IRInstr::gen_asm() on all its instructions, and then
-		    if  exit_true  is a  nullptr,
+		if  exit_true  is a  nullptr,
             the epilogue is generated
         else if exit_false is a nullptr,
           an unconditional jmp to the exit_true branch is generated
-				else (we have two successors, hence a branch)
+		else (we have two successors, hence a branch)
           an instruction comparing the value of test_var_name to true is generated,
 					followed by a conditional branch to the exit_false branch,
 					followed by an unconditional branch to the exit_true branch
@@ -150,7 +153,7 @@ Possible optimization:
 class BasicBlock {
  public:
 	BasicBlock(CFG* cfg, string entry_label);
-	BasicBlock(CFG* cfg, string entry_label, const BasicBlock & parentBasicBlock);
+	BasicBlock(CFG* cfg, string entry_label, BasicBlock & parentBasicBlock);
 	void gen_asm(ostream &o, BackendStrategy *backend);
 
 	void add_IRInstr(IRInstr::Operation op, Type * t, vector<string> params);
@@ -163,6 +166,8 @@ class BasicBlock {
 	vector<IRInstr*> instrs; /** < the instructions themselves. */
   	string test_var_name;  /** < when generating IR code for an if(expr) or while(expr) etc,
 													 store here the name of the variable that holds the value of expr */
+
+	BasicBlock * parentBb;
 
 	SymbolTable* symbolTable;
 
@@ -186,9 +191,11 @@ class CFG {
  public:
 	CFG();
 
-	CFG(BackendStrategy * backend_strategy);
+	CFG(BackendStrategy * backend_strategy, string functionName);
 
 	void add_bb(BasicBlock* bb);
+
+	void add_exit_falseBB (BasicBlock * ifBb, BasicBlock * newBb, BasicBlock * defaultBb); 
 
 	// x86 code generation: could be encapsulated in a processor class in a retargetable compiler
 	void gen_asm(ostream& o) const;
@@ -214,6 +221,9 @@ class CFG {
 
 	bool getHasError() const; 
 
+	string getFunctionName() const;
+	vector <BasicBlock*> bbs; /**< all the basic blocks of this CFG*/
+
  protected:
 	map <string, Type*> SymbolType; /**< part of the symbol table  */
 	map <string, int> SymbolIndex; /**< part of the symbol table  */
@@ -222,7 +232,8 @@ class CFG {
 
 	BackendStrategy * backend; /**< The assembly generation strategy. Depends on the target architecture */
 
-	vector <BasicBlock*> bbs; /**< all the basic blocks of this CFG*/
 	bool hasReturnStatement = false;
 	bool hasError = false;
+
+	string functionName;
 };

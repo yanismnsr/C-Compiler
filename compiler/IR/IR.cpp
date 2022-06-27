@@ -8,17 +8,38 @@ using namespace std;
 CFG::CFG() {
     this->nextBBnumber = 0;
     this->nextFreeSymbolIndex = -4;
+    this->current_bb = nullptr;
 }
 
-CFG::CFG(BackendStrategy * backendStrategy) {
+CFG::CFG(BackendStrategy * backendStrategy, string functionName) {
     this->nextBBnumber = 0;
     this->nextFreeSymbolIndex = -4;
     this->backend = backendStrategy;
+    this->functionName = functionName;
+    this->current_bb = nullptr;
 }
 
 void CFG::add_bb(BasicBlock* bb) {
     this->bbs.push_back(bb);
+    if (this->current_bb != nullptr) {
+        bb->exit_true = this->current_bb->exit_true;
+        this->current_bb->exit_true = bb;
+    } 
     this->current_bb = bb;
+
+    // for (BasicBlock * bb : bb->cfg->bbs) {
+    //     if (bb->exit_true) {
+    //         cout << bb->label << " >> " << bb->exit_true->label << " :: ";
+    //     } 
+    //     if (bb->exit_false) {
+    //         cout << bb->label << " >>> " << bb->exit_false->label << " :: ";
+    //     } 
+    //     if (!bb->exit_true && !bb->exit_false) {
+    //         cout << "NA: " << bb->label << " :: ";
+    //     }
+    // }
+    // cout << endl;
+    
 }
 
 void CFG::add_to_symbol_table (string name, Type *t) {
@@ -50,11 +71,10 @@ void CFG::gen_asm(ostream& o) const {
     for (BasicBlock* bb : this->bbs) {
         bb->gen_asm(o, this->backend);
     }
-    this->gen_asm_epilogue(o);
 }
 
 void CFG::gen_asm_prologue(ostream& o) const {
-    this->backend->generate_prologue(o);
+    this->backend->generate_prologue(o, *this);
 }
 
 void CFG::gen_asm_epilogue(ostream& o) const {
@@ -78,18 +98,46 @@ bool CFG::getHasError() const {
     return this->hasError; 
 }
 
+string CFG::getFunctionName() const {
+    return this->functionName;
+}
+
+void CFG::add_exit_falseBB(BasicBlock * ifBb, BasicBlock * newBb, BasicBlock * defaultBb) {
+    this->bbs.push_back(newBb);
+    ifBb->exit_false = newBb;
+    newBb->exit_true = defaultBb;
+    this->current_bb = newBb;
+
+    // for (BasicBlock * bb : ifBb->cfg->bbs) {
+    //     if (bb->exit_true) {
+    //         cout << bb->label << " >> " << bb->exit_true->label << " :: ";
+    //     } 
+    //     if (bb->exit_false) {
+    //         cout << bb->label << " >>> " << bb->exit_false->label << " :: ";
+    //     } 
+    //     if (!bb->exit_true && !bb->exit_false) {
+    //         cout << "NA: " << bb->label << " :: ";
+    //     }
+    // }
+    // cout << endl;
+}
+
 
 // Basic block
 BasicBlock::BasicBlock(CFG* cfg, string entry_label) {
     this->cfg = cfg;
     this->label = entry_label;
     this->symbolTable = new SymbolTable(this);
+    this->exit_true = nullptr;
+    this->exit_false = nullptr;
+    this->parentBb = nullptr;
 }
 
-BasicBlock::BasicBlock(CFG* cfg, string entry_label, const BasicBlock & parentBasicBlock) {
+BasicBlock::BasicBlock(CFG* cfg, string entry_label, BasicBlock & parentBasicBlock) {
     this->cfg = cfg;
     this->label = entry_label;
     this->symbolTable = new SymbolTable(this, parentBasicBlock.symbolTable);
+    this->parentBb = &parentBasicBlock;
 }
 
 void BasicBlock::add_IRInstr(IRInstr::Operation op, Type * t, vector<string> params) {
@@ -97,9 +145,14 @@ void BasicBlock::add_IRInstr(IRInstr::Operation op, Type * t, vector<string> par
 }
 
 void BasicBlock::gen_asm(ostream &o, BackendStrategy *backend) {
+    if (this->label != "prologue") {
+        o << this->label << ":" << endl;
+    }
     for (IRInstr* instr : this->instrs) {
         instr->gen_asm(o, backend);
     }
+    
+    backend->generate_jump(*this, o);
 }
 
 // IRInstr

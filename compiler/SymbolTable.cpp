@@ -11,12 +11,14 @@ SymbolTable::SymbolTable(BasicBlock* bb)
 	cleanWarningsFile();
 	this->basicBlock = bb; 
 	this->parentSymbolTable = nullptr;
+	this->memoryOffset = 0;
 }
 
 SymbolTable::SymbolTable(BasicBlock* bb, SymbolTable* parentSymbolTable) {
 	cleanWarningsFile();
 	this->basicBlock = bb;
 	this->parentSymbolTable = parentSymbolTable;
+	this->memoryOffset = parentSymbolTable->getNextAllowedAddress();
 }
 
 void SymbolTable::cleanWarningsFile()
@@ -35,23 +37,24 @@ void SymbolTable::writeWarning(string message)
 
 Symbol& SymbolTable::addVariable(string variableName)
 {
+	int address = this->getNextAllowedAddress();
 	if (variableToMemoryMap.find(variableName) == variableToMemoryMap.end())
 	{
-		variableToMemoryMap[variableName] = new Symbol((variableToMemoryMap.size() + 1) * -4, false, false, false, variableName);
+		variableToMemoryMap[variableName] = new Symbol(address, false, false, false, variableName);
 	}
 	else
 	{
 		cerr << "Variable \'" + variableName + "\' already exists." << endl;
 		this->basicBlock->cfg->errorFound();
 	}
-
 	return *(variableToMemoryMap[variableName]);
 }
 
 Symbol& SymbolTable::addTemporaryVariable()
 {
+	int address = this->getNextAllowedAddress();
 	string temporaryVariableName = "#tmp" + to_string(++nbTemporaryVariables);
-	variableToMemoryMap[temporaryVariableName] = new Symbol((variableToMemoryMap.size() + 1) * -4, true, true, true, temporaryVariableName);
+	variableToMemoryMap[temporaryVariableName] = new Symbol(address, true, true, true, temporaryVariableName);
 	return *(variableToMemoryMap[temporaryVariableName]);
 }
 
@@ -61,8 +64,8 @@ Symbol* SymbolTable::getSymbol(string variableName)
 	SymbolTable * st = this;
 	Symbol* symbol;
 
-	while (st != nullptr) {
-		symbol = variableToMemoryMap.find(variableName) == variableToMemoryMap.end() ? nullptr : variableToMemoryMap.find(variableName)->second;
+	while (st != nullptr && !found) {
+		symbol = st->variableToMemoryMap.find(variableName) == st->variableToMemoryMap.end() ? nullptr : st->variableToMemoryMap.find(variableName)->second;
 		if (symbol != nullptr) {
 			found = true;
 			symbol->isUsed = true;
@@ -102,11 +105,20 @@ void SymbolTable::checkAreAllDeclaredVariablesUsedAndInitialized()
 
 void SymbolTable::setVariableIsInitialized(string variableName, bool isInitialized) 
 {
-	Symbol* symbol = variableToMemoryMap.find(variableName) == variableToMemoryMap.end() ? nullptr : variableToMemoryMap.find(variableName)->second;
-	if (symbol != nullptr) 
-	{
-		variableToMemoryMap.find(variableName)->second->isInitialized = isInitialized;
-	}
+	bool found = false;
+	SymbolTable * st = this;
+	Symbol* symbol;
+	while (st != nullptr && !found) {
+		symbol = st->variableToMemoryMap.find(variableName) == st->variableToMemoryMap.end() ? nullptr : st->variableToMemoryMap.find(variableName)->second;
+		if (symbol != nullptr) {
+			found = true;
+			symbol->isInitialized = true;
+		}
+		st = st->parentSymbolTable;
+	}	
 }
 
 
+int SymbolTable::getNextAllowedAddress () {
+	return this->memoryOffset - (this->variableToMemoryMap.size() * 4) -4;
+}
