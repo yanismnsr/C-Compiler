@@ -546,7 +546,7 @@ void generateCmpeq(const IRInstr & instruction, ostream &o) {
         }
     }
 
-    o << "  sete    %al" << endl;
+    o << "  setne    %al" << endl;
     o << "  andb    $1, %al" << endl;
     o << "  movzbl  %al, %eax" << endl;
 
@@ -643,11 +643,165 @@ void generateCmpne(const IRInstr & instruction, ostream &o) {
 }
 
 void generateCmpgt(const IRInstr & instruction, ostream &o) {
+    // TODO check if negative constants work
+    vector<string> params = instruction.getParams();
 
+    // Param1 : Destination
+    string destination = params[0];
+
+    // Param2 : op1 (register, constant or variable)
+    string operand1 = params[1];
+    if (regex_match(operand1, regex("-?[0-9]+")))
+    { // constant
+        o << "  movl    $" << operand1 << ", %eax" << endl;
+    }
+    else if (operand1[0] == '%')
+    { // register
+        string mappedRegister = X86Strategy::registers[operand1];
+        o << "  movl    " << mappedRegister << ", %eax" << endl;
+    }
+    else
+    { // variable
+
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+
+        Symbol *symbol = symbolTable->getSymbol(operand1);
+        if (symbol != nullptr)
+        {
+            int variableOffset = symbol->memoryAddress;
+            o << "  movl    " << variableOffset << "(%rbp), %eax" << endl;
+        }
+    }
+
+    // Param3 : op2 (register, constant or variable)
+    string operand2 = params[2];
+    if (regex_match(operand2, regex("-?[0-9]+")))
+    { // constant
+        o << "  cmpl    $" << operand2 << ", %eax" << endl;
+    }
+    else if (operand2[0] == '%')
+    { // register
+        string mappedRegister = X86Strategy::registers[operand2];
+        o << "  cmpl    " << mappedRegister << ", %eax" << endl;
+    }
+    else
+    { // variable
+
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+
+        Symbol *symbol = symbolTable->getSymbol(operand2);
+        if (symbol != nullptr)
+        {
+            int variableOffset = symbol->memoryAddress;
+            o << "  cmpl    " << variableOffset << "(%rbp), %eax" << endl;
+        }
+    }
+
+    o << "  setg   %al"    << endl;
+    o << "  movzbl  %al, %eax" << endl;
+
+
+    // Destination
+    if (destination[0] == '%')
+    { // register
+        string mappedDestination = X86Strategy::registers[destination];
+
+        o << "  movl    %eax, " << mappedDestination << endl;
+    }
+    else
+    { // variable
+
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+
+        Symbol *symbol = symbolTable->getSymbol(destination);
+        if (symbol != nullptr)
+        {
+            int variableOffset = symbol->memoryAddress;
+            o << "  movl    %eax, " << variableOffset << "(%rbp)" << endl;
+            o << "  cmpl    $0, " << variableOffset <<"(%rbp)" << endl;
+        }
+    }
 }
 
 void generateCmpge(const IRInstr & instruction, ostream &o) {
+    // TODO check if negative constants work
+    vector<string> params = instruction.getParams();
 
+    // Param1 : Destination
+    string destination = params[0];
+
+    // Param2 : op1 (register, constant or variable)
+    string operand1 = params[1];
+    if (regex_match(operand1, regex("-?[0-9]+")))
+    { // constant
+        o << "  movl    $" << operand1 << ", %eax" << endl;
+    }
+    else if (operand1[0] == '%')
+    { // register
+        string mappedRegister = X86Strategy::registers[operand1];
+        o << "  movl    " << mappedRegister << ", %eax" << endl;
+    }
+    else
+    { // variable
+
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+
+        Symbol *symbol = symbolTable->getSymbol(operand1);
+        if (symbol != nullptr)
+        {
+            int variableOffset = symbol->memoryAddress;
+            o << "  movl    " << variableOffset << "(%rbp), %eax" << endl;
+        }
+    }
+
+    // Param3 : op2 (register, constant or variable)
+    string operand2 = params[2];
+    if (regex_match(operand2, regex("-?[0-9]+")))
+    { // constant
+        o << "  cmpl    $" << operand2 << ", %eax" << endl;
+    }
+    else if (operand2[0] == '%')
+    { // register
+        string mappedRegister = X86Strategy::registers[operand2];
+        o << "  cmpl    " << mappedRegister << ", %eax" << endl;
+    }
+    else
+    { // variable
+
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+
+        Symbol *symbol = symbolTable->getSymbol(operand2);
+        if (symbol != nullptr)
+        {
+            int variableOffset = symbol->memoryAddress;
+            o << "  cmpl    " << variableOffset << "(%rbp), %eax" << endl;
+        }
+    }
+
+    o << "  setge   %al"    << endl;
+    o << "  movzbl  %al, %eax" << endl;
+
+
+    // Destination
+    if (destination[0] == '%')
+    { // register
+        string mappedDestination = X86Strategy::registers[destination];
+
+        o << "  movl    %eax, " << mappedDestination << endl;
+    }
+    else
+    { // variable
+
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+
+        Symbol *symbol = symbolTable->getSymbol(destination);
+        if (symbol != nullptr)
+        {
+            int variableOffset = symbol->memoryAddress;
+            o << "  movl    %eax, " << variableOffset << "(%rbp)" << endl;
+            o << "  cmpl    $0, " << variableOffset <<"(%rbp)" << endl;
+        }
+    }
 }
 
 void generateCmplt(const IRInstr & instruction, ostream &o) {
@@ -734,7 +888,84 @@ void generateCmplt(const IRInstr & instruction, ostream &o) {
 }
 
 void generateCmple(const IRInstr & instruction, ostream &o) {
+    // TODO check if negative constants work
+    vector<string> params = instruction.getParams();
 
+    // Param1 : Destination
+    string destination = params[0];
+
+    // Param2 : op1 (register, constant or variable)
+    string operand1 = params[1];
+    if (regex_match(operand1, regex("-?[0-9]+")))
+    { // constant
+        o << "  movl    $" << operand1 << ", %eax" << endl;
+    }
+    else if (operand1[0] == '%')
+    { // register
+        string mappedRegister = X86Strategy::registers[operand1];
+        o << "  movl    " << mappedRegister << ", %eax" << endl;
+    }
+    else
+    { // variable
+
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+
+        Symbol *symbol = symbolTable->getSymbol(operand1);
+        if (symbol != nullptr)
+        {
+            int variableOffset = symbol->memoryAddress;
+            o << "  movl    " << variableOffset << "(%rbp), %eax" << endl;
+        }
+    }
+
+    // Param3 : op2 (register, constant or variable)
+    string operand2 = params[2];
+    if (regex_match(operand2, regex("-?[0-9]+")))
+    { // constant
+        o << "  cmpl    $" << operand2 << ", %eax" << endl;
+    }
+    else if (operand2[0] == '%')
+    { // register
+        string mappedRegister = X86Strategy::registers[operand2];
+        o << "  cmpl    " << mappedRegister << ", %eax" << endl;
+    }
+    else
+    { // variable
+
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+
+        Symbol *symbol = symbolTable->getSymbol(operand2);
+        if (symbol != nullptr)
+        {
+            int variableOffset = symbol->memoryAddress;
+            o << "  cmpl    " << variableOffset << "(%rbp), %eax" << endl;
+        }
+    }
+
+    o << "  setle   %al"    << endl;
+    o << "  movzbl  %al, %eax" << endl;
+
+
+    // Destination
+    if (destination[0] == '%')
+    { // register
+        string mappedDestination = X86Strategy::registers[destination];
+
+        o << "  movl    %eax, " << mappedDestination << endl;
+    }
+    else
+    { // variable
+
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+
+        Symbol *symbol = symbolTable->getSymbol(destination);
+        if (symbol != nullptr)
+        {
+            int variableOffset = symbol->memoryAddress;
+            o << "  movl    %eax, " << variableOffset << "(%rbp)" << endl;
+            o << "  cmpl    $0, " << variableOffset <<"(%rbp)" << endl;
+        }
+    }
 }
 
 void generateCmp(const IRInstr &instruction, ostream &o)
@@ -821,19 +1052,19 @@ void X86Strategy::generate_assembly(const IRInstr &instruction, ostream &o)
         generateCmpeq(instruction, o);
         break;
     case (IRInstr::Operation::cmp_ne):
-        generateCmp(instruction, o);
+        generateCmpne(instruction, o);
         break;
     case (IRInstr::Operation::cmp_lt):
         generateCmplt(instruction, o);
         break;
     case (IRInstr::Operation::cmp_le):
-        generateCmp(instruction, o);
+        generateCmple(instruction, o);
         break;
 	case (IRInstr::Operation::cmp_gt):
-        generateCmp(instruction, o);
+        generateCmpgt(instruction, o);
         break;
 	case (IRInstr::Operation::cmp_ge):
-        generateCmp(instruction, o);
+        generateCmpge(instruction, o);
         break;
     case (IRInstr::Operation::returnVar):
         generateReturnVar(instruction, o);
