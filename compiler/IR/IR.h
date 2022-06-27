@@ -199,6 +199,8 @@ class CFG {
 
 	void add_exit_falseBB (BasicBlock * ifBb, BasicBlock * newBb, BasicBlock * defaultBb); 
 
+	void add_exit_falseBB (BasicBlock * ifBb, BasicBlock * newBb);
+
 	// x86 code generation: could be encapsulated in a processor class in a retargetable compiler
 	void gen_asm(ostream& o) const;
 	// string IR_reg_to_asm(string reg); /**< helper method: inputs a IR reg or input variable, returns e.g. "-24(%rbp)" for the proper value of 24 */
@@ -225,6 +227,8 @@ class CFG {
 
 	string getFunctionName() const;
 	vector <BasicBlock*> bbs; /**< all the basic blocks of this CFG*/
+
+	bool previousBlockIsReturnBlock = false;
 
  protected:
 	map <string, Type*> SymbolType; /**< part of the symbol table  */
