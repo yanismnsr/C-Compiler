@@ -96,7 +96,8 @@ class IRInstr {
 		ret,
 		retq,
 		andop,
-		orop
+		orop,
+		new_function
 	} Operation;
 
 
