@@ -705,7 +705,7 @@ void generateCmplt(const IRInstr & instruction, ostream &o) {
         }
     }
 
-    o << "  setle   %al"    << endl;
+    o << "  setl   %al"    << endl;
     o << "  movzbl  %al, %eax" << endl;
 
 
@@ -726,8 +726,10 @@ void generateCmplt(const IRInstr & instruction, ostream &o) {
         {
             int variableOffset = symbol->memoryAddress;
             o << "  movl    %eax, " << variableOffset << "(%rbp)" << endl;
+            o << "  cmpl    $0, " << variableOffset <<"(%rbp)" << endl;
         }
     }
+
 }
 
 void generateCmple(const IRInstr & instruction, ostream &o) {
