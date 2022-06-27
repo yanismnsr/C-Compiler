@@ -12,6 +12,7 @@ SymbolTable::SymbolTable(BasicBlock* bb)
 	this->basicBlock = bb; 
 	this->parentSymbolTable = nullptr;
 	this->memoryOffset = 0;
+	this->nbTemporaryVariables = 0; 
 }
 
 SymbolTable::SymbolTable(BasicBlock* bb, SymbolTable* parentSymbolTable) {
@@ -19,6 +20,7 @@ SymbolTable::SymbolTable(BasicBlock* bb, SymbolTable* parentSymbolTable) {
 	this->basicBlock = bb;
 	this->parentSymbolTable = parentSymbolTable;
 	this->memoryOffset = parentSymbolTable->getNextAllowedAddress();
+	this->nbTemporaryVariables = 0; 
 }
 
 void SymbolTable::cleanWarningsFile()
@@ -53,7 +55,9 @@ Symbol& SymbolTable::addVariable(string variableName)
 Symbol& SymbolTable::addTemporaryVariable()
 {
 	int address = this->getNextAllowedAddress();
-	string temporaryVariableName = "#tmp" + to_string(++nbTemporaryVariables);
+	string temporaryVariableName = "#tmp" + to_string(++this->nbTemporaryVariables);
+	// cout << "Adding temporary variable " << temporaryVariableName << " in " << this->basicBlock->label << endl;
+	// cout << "address : " << address << endl;
 	variableToMemoryMap[temporaryVariableName] = new Symbol(address, true, true, true, temporaryVariableName);
 	return *(variableToMemoryMap[temporaryVariableName]);
 }

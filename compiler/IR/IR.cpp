@@ -21,7 +21,7 @@ CFG::CFG(BackendStrategy * backendStrategy, string functionName) {
 
 void CFG::add_bb(BasicBlock* bb) {
     this->bbs.push_back(bb);
-    if (this->current_bb != nullptr) {
+    if (this->current_bb != nullptr && !this->previousBlockIsReturnBlock) {
         bb->exit_true = this->current_bb->exit_true;
         this->current_bb->exit_true = bb;
     } 
@@ -122,6 +122,25 @@ void CFG::add_exit_falseBB(BasicBlock * ifBb, BasicBlock * newBb, BasicBlock * d
     // cout << endl;
 }
 
+void CFG::add_exit_falseBB(BasicBlock * ifBb, BasicBlock * newBb) {
+    this->bbs.push_back(newBb);
+    ifBb->exit_false = newBb;
+    this->current_bb = newBb;
+
+    // for (BasicBlock * bb : ifBb->cfg->bbs) {
+    //     if (bb->exit_true) {
+    //         cout << bb->label << " >> " << bb->exit_true->label << " :: ";
+    //     } 
+    //     if (bb->exit_false) {
+    //         cout << bb->label << " >>> " << bb->exit_false->label << " :: ";
+    //     } 
+    //     if (!bb->exit_true && !bb->exit_false) {
+    //         cout << "NA: " << bb->label << " :: ";
+    //     }
+    // }
+    // cout << endl;
+}
+
 
 // Basic block
 BasicBlock::BasicBlock(CFG* cfg, string entry_label) {
@@ -137,6 +156,8 @@ BasicBlock::BasicBlock(CFG* cfg, string entry_label, BasicBlock & parentBasicBlo
     this->cfg = cfg;
     this->label = entry_label;
     this->symbolTable = new SymbolTable(this, parentBasicBlock.symbolTable);
+    this->exit_true = nullptr;
+    this->exit_false = nullptr;
     this->parentBb = &parentBasicBlock;
 }
 

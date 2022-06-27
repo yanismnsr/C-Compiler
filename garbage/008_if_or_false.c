@@ -1,8 +1,9 @@
-int main () {
-    int a = 1, b = 3;
-    int c = 0;
-    if (a == 2 | b == 3) {
-        c = 1;
-    }
-    return c;
+int main() {
+    int a = 0;
+    int b = 1;
+	if (a == b)
+	{
+		return 1;
+	}
+	return 0;
 }

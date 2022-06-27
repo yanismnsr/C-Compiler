@@ -419,7 +419,6 @@ void generateCmpeq(const IRInstr & instruction, ostream &o) {
     _makeOperation("cmpl", operand2, "%eax", symbolTable, o);
 
     o << "  sete    %al" << endl;
-    o << "  andb    $1, %al" << endl;
     o << "  movzbl  %al, %eax" << endl;
 
     // Destination
@@ -694,7 +693,7 @@ void X86Strategy::generate_jump(const BasicBlock &basicBlock, ostream &o) {
         o << "  jmp " << basicBlock.exit_true->label << " # unconditional jump to true block" << endl;
     } else { // Conditional jump
 		// o << "  cmpl    $0, %al" << endl;
-		o << "  jne  " << basicBlock.exit_false->label << " # jump to false branch" << endl;
+		o << "  je  " << basicBlock.exit_false->label << " # jump to false branch" << endl;
 	}
 }
 
@@ -804,7 +803,6 @@ void X86Strategy::generate_prologue(ostream &o, const CFG & cfg)
 
 void X86Strategy::generate_epilogue(ostream &o, const CFG &cfg)
 {
-
     o << "   movq	%rbp, %rsp\n"
          << "   popq	%rbp\n";
 
