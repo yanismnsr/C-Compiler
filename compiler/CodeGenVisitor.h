@@ -18,6 +18,7 @@ private:
 	bool returnPresent = false;
 	int nbTemporaryVariable = 0;
 	CFG cfg;
+	BasicBlock * epilogue;
 
 	bool endOfBlock = false; 		// State variable to say that we just closed a block. It means that the 
 									// next instruction has to create a new block
@@ -25,6 +26,8 @@ private:
 	bool previousBlockIsIfBlock = false; 	// State variable to say that the current block is a successor of an if
 											// Block. This means that the current block is meant to be created in 
 											// the visitIfInstr function. No need to create a new block then 
+
+	bool previousBlockIsReturnBlock = false;
 
 public:
 
@@ -57,8 +60,6 @@ public:
 	virtual std::any visitUnaryExpression(ifccParser::UnaryExpressionContext *ctx) override;
 
 	virtual std::any visitElseInstr(ifccParser::ElseInstrContext *ctx) override;
-
-	virtual std::any visitUnaryComparison(ifccParser::UnaryComparisonContext *ctx) override;
 
 	virtual std::any visitSimpleComparison(ifccParser::SimpleComparisonContext *ctx) override;
 

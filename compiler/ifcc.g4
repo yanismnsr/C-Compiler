@@ -23,7 +23,7 @@ affectation :
     IDENTIFIER '=' expr
     ;
 
-ifInstr: 'if' '(' comparison ')' (instr | block) elseInstr? ;
+ifInstr: 'if' '(' expr ')' (instr | block) elseInstr? ;
 
 whileInstr: 'while' '(' comparison ')' (instr | block) ;
 
@@ -38,15 +38,10 @@ expr:
     | expr op=(MULT | DIV) expr                                                             # multdiv
     | expr op=(ADD | MINUS) expr                                                            # addmin
     | '(' expr ')'                                                                          # parenthesis
+    | expr COMPARISONOPERATOR expr                                                          # simpleComparison
+    | expr CONDOPERATORS expr                                                               # multipleOperatorsComparison
     ;
 
-
-
-comparison : 
-    expr                                            # unaryComparison
-    | expr COMPARISONOPERATOR expr                  # simpleComparison
-    | comparison CONDOPERATORS comparison           # multipleOperatorsComparison
-    ;
 
 CONDOPERATORS :
     '&' | '|'

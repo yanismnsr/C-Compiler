@@ -13,6 +13,28 @@ map<string, string> X86Strategy::registers = {
     {"%bool", "%al"}
 };
 
+
+void _makeOperation(const string & operation, const string & operand, const string & reg, SymbolTable * symbolTable, ostream & o) {
+    if (regex_match(operand, regex("-?[0-9]+")))
+    { // constant
+        o << "  " << operation << "    $" << operand << ", " << reg << endl;
+    }
+    else if (operand[0] == '%')
+    { // register
+        string mappedRegister = X86Strategy::registers[operand];
+        o << "  "<< operation << "    " << mappedRegister << ", " << reg << endl;
+    }
+    else
+    { // variable
+        Symbol *symbol = symbolTable->getSymbol(operand);
+        if (symbol != nullptr)
+        {
+            int variableOffset = symbol->memoryAddress;
+            o << "  " << operation << "    " << variableOffset << "(%rbp), " << reg << "        # variable " << symbol->symbolName << endl;
+        }
+    }
+}
+
 void generatePushq(const IRInstr &instruction, ostream &o)
 {
     vector<string> params = instruction.getParams();
@@ -197,53 +219,15 @@ void generateAdd(const IRInstr &instruction, ostream &o)
     string destination = params[0];
     string mappedDestination = X86Strategy::registers[destination];
 
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+
     // Param2 : op1 (register, constant or variable)
     string operand1 = params[1];
-    if (regex_match(operand1, regex("-?[0-9]+")))
-    { // constant
-        o << "  movl    $" << operand1 << ", %eax" << endl;
-    }
-    else if (operand1[0] == '%')
-    { // register
-        string mappedRegister = X86Strategy::registers[operand1];
-        o << "  movl    " << mappedRegister << ", %eax" << endl;
-    }
-    else
-    { // variable
-
-        SymbolTable * symbolTable = instruction.getSymbolTable();
-
-        Symbol *symbol = symbolTable->getSymbol(operand1);
-        if (symbol != nullptr)
-        {
-            int variableOffset = symbol->memoryAddress;
-            o << "  movl    " << variableOffset << "(%rbp), %eax        # variable " << symbol->symbolName << endl;
-        }
-    }
+    _makeOperation("movl", operand1, "%eax", symbolTable, o);
 
     // Param3 : op2 (register, constant or variable)
     string operand2 = params[2];
-    if (regex_match(operand2, regex("-?[0-9]+")))
-    { // constant
-        o << "  addl    $" << operand2 << ", %eax" << endl;
-    }
-    else if (operand2[0] == '%')
-    { // register
-        string mappedRegister = X86Strategy::registers[operand2];
-        o << "  addl    " << mappedRegister << ", %eax" << endl;
-    }
-    else
-    { // variable
-
-        SymbolTable * symbolTable = instruction.getSymbolTable();
-
-        Symbol *symbol = symbolTable->getSymbol(operand2);
-        if (symbol != nullptr)
-        {
-            int variableOffset = symbol->memoryAddress;
-            o << "  addl    " << variableOffset << "(%rbp), %eax    #variable " << symbol->symbolName << endl;
-        }
-    }
+    _makeOperation("addl", operand2, "%eax", symbolTable, o);
 
     // Destination
     if (destination[0] == '%')
@@ -273,46 +257,15 @@ void generateSub(const IRInstr &instruction, ostream &o)
     string destination = params[0];
     string mappedDestination = X86Strategy::registers[destination];
 
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+
     // Param2 : op1 (register, constant or variable)
     string operand1 = params[1];
-    if (regex_match(operand1, regex("-?[0-9]+"))){ // constant
-        o << "  movl    $" << operand1 << ", %eax" << endl;
-    }
-    else if (operand1[0] == '%'){ // register
-        string mappedRegister = X86Strategy::registers[operand1];
-        o << "  movl    " << mappedRegister << ", %eax" << endl;
-    }
-    else{ // variable
-
-        SymbolTable * symbolTable = instruction.getSymbolTable();
-
-        Symbol *symbol = symbolTable->getSymbol(operand1);
-        if (symbol != nullptr)
-        {
-            int variableOffset = symbol->memoryAddress;
-            o << "  movl    " << variableOffset << "(%rbp), %eax    #variable " << symbol->symbolName << endl;
-        }
-    }
+    _makeOperation("movl", operand1, "%eax", symbolTable, o);
 
     // Param3 : op2 (register, constant or variable)
     string operand2 = params[2];
-    if (regex_match(operand2, regex("-?[0-9]+"))){ // constant
-        o << "  subl    $" << operand2 << ", %eax" << endl;
-    }
-    else if (operand2[0] == '%'){ // register
-        string mappedRegister = X86Strategy::registers[operand2];
-        o << "  subl    " << mappedRegister << ", %eax" << endl;
-    }
-    else{ // variable
-        
-        SymbolTable * symbolTable = instruction.getSymbolTable();
-
-        Symbol *symbol = symbolTable->getSymbol(operand2);
-        if (symbol != nullptr){
-            int variableOffset = symbol->memoryAddress;
-            o << "  subl    " << variableOffset << "(%rbp), %eax    #variable " << symbol->symbolName << endl;
-        }
-    }
+    _makeOperation("subl", operand2, "%eax", symbolTable, o);
 
     // Destination
     if (destination[0] == '%'){ // register
@@ -340,42 +293,15 @@ void generateMul(const IRInstr &instruction, ostream &o)
     // Param1 : Destination
     string destination = params[0];
 
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+
     // Param2 : op1 (register, constant or variable)
     string operand1 = params[1];
-    if (regex_match(operand1, regex("-?[0-9]+"))){ // constant
-        o << "  movl    $" << operand1 << ", %eax" << endl;
-    }
-    else if (operand1[0] == '%'){ // register
-        string mappedRegister = X86Strategy::registers[operand1];
-        o << "  movl    " << mappedRegister << ", %eax" << endl;
-    }
-    else{ // variable
-        SymbolTable * symbolTable = instruction.getSymbolTable();
-        Symbol *symbol = symbolTable->getSymbol(operand1);
-        if (symbol != nullptr){
-            int variableOffset = symbol->memoryAddress;
-            o << "  movl    " << variableOffset << "(%rbp), %eax    #variable " << symbol->symbolName << endl;
-        }
-    }
+    _makeOperation("movl", operand1, "%eax", symbolTable, o);
 
     // Param3 : op2 (register, constant or variable)
     string operand2 = params[2];
-    if (regex_match(operand2, regex("-?[0-9]+"))){ // constant
-        cerr << operand2 << " debug mode " << endl;
-        o << "  imull    $" << operand2 << ", %eax #const " << endl;
-    }
-    else if (operand2[0] == '%'){ // register
-        string mappedRegister = X86Strategy::registers[operand2];
-        o << "  imull    " << mappedRegister << ", %eax #register " << endl;
-    }
-    else{ // variable
-        SymbolTable * symbolTable = instruction.getSymbolTable();
-        Symbol *symbol = symbolTable->getSymbol(operand2);
-        if (symbol != nullptr){
-            int variableOffset = symbol->memoryAddress;
-            o << "  imull    " << variableOffset << "(%rbp), %eax   #variable " << symbol->symbolName << endl;
-        }
-    }
+    _makeOperation("imull", operand2, "%eax", symbolTable, o);
 
     // Destination
     if (destination[0] == '%'){ // register
@@ -400,27 +326,11 @@ void generateDiv(const IRInstr &instruction, ostream &o)
     string destination = params[0];
     string mappedDestination = X86Strategy::registers[destination];
 
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+
     // Param2 : op1 (register, constant or variable)
     string operand1 = params[1];
-    if (regex_match(operand1, regex("-?[0-9]+")))
-    { // constant
-        o << "  movl    $" << operand1 << ", %eax" << endl;
-    }
-    else if (operand1[0] == '%')
-    { // register
-        string mappedRegister = X86Strategy::registers[operand1];
-        o << "  movl    " << mappedRegister << ", %eax" << endl;
-    }
-    else
-    { // variable
-        SymbolTable * symbolTable = instruction.getSymbolTable();
-        Symbol *symbol = symbolTable->getSymbol(operand1);
-        if (symbol != nullptr)
-        {
-            int variableOffset = symbol->memoryAddress;
-            o << "  movl    " << variableOffset << "(%rbp), %eax        # variable " << symbol->symbolName << endl;
-        }
-    }
+    _makeOperation("movl", operand1, "%eax", symbolTable, o);
 
     o << "cltd    # initialize sign register" << endl;
 
@@ -428,7 +338,6 @@ void generateDiv(const IRInstr &instruction, ostream &o)
     string operand2 = params[2];
     if (regex_match(operand2, regex("-?[0-9]+")))
     { // constant
-        cerr << operand2 << " debug mode " << endl;
         o << "  idivl    $" << operand2 << " #const " << endl;
     }
     else if (operand2[0] == '%')
@@ -498,56 +407,18 @@ void generateCmpeq(const IRInstr & instruction, ostream &o) {
     // Param1 : Destination 
     string destination = params[0];
 
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+
     // Param2 : op1 (register, constant or variable)
     string operand1 = params[1];
-    if (regex_match(operand1, regex("-?[0-9]+")))
-    { // constant
-        o << "  movl    $" << operand1 << ", %eax" << endl;
-    }
-    else if (operand1[0] == '%')
-    { // register
-        string mappedRegister = X86Strategy::registers[operand1];
-        o << "  movl    " << mappedRegister << ", %eax" << endl;
-    }
-    else
-    { // variable
+    _makeOperation("movl", operand1, "%eax", symbolTable, o);
 
-        SymbolTable * symbolTable = instruction.getSymbolTable();
-
-        Symbol *symbol = symbolTable->getSymbol(operand1);
-        if (symbol != nullptr)
-        {
-            int variableOffset = symbol->memoryAddress;
-            o << "  movl    " << variableOffset << "(%rbp), %eax    # variable " << symbol->symbolName << endl;
-        }
-    }
 
     // Param3 : op2 (register, constant or variable)
     string operand2 = params[2];
-    if (regex_match(operand2, regex("-?[0-9]+")))
-    { // constant
-        o << "  cmpl    $" << operand2 << ", %eax" << endl;
-    }
-    else if (operand2[0] == '%')
-    { // register
-        string mappedRegister = X86Strategy::registers[operand2];
-        o << "  cmpl    " << mappedRegister << ", %eax" << endl;
-    }
-    else
-    { // variable
-
-        SymbolTable * symbolTable = instruction.getSymbolTable();
-
-        Symbol *symbol = symbolTable->getSymbol(operand2);
-        if (symbol != nullptr)
-        {
-            int variableOffset = symbol->memoryAddress;
-            o << "  cmpl    " << variableOffset << "(%rbp), %eax        # variable " << symbol->symbolName << endl;
-        }
-    }
+    _makeOperation("cmpl", operand2, "%eax", symbolTable, o);
 
     o << "  sete    %al" << endl;
-    o << "  andb    $1, %al" << endl;
     o << "  movzbl  %al, %eax" << endl;
 
     // Destination
@@ -583,46 +454,10 @@ void generateOrop(const IRInstr & instruction, ostream &o) {
     SymbolTable * symbolTable = instruction.getSymbolTable();
 
     // Operand 1
-    if (regex_match(op1, regex("-?[0-9]+")))
-    { // constant
-        o << "  movl    $" << op1 << ", %eax" << endl;
-    }
-    else if (op1[0] == '%')
-    { // register
-        string mappedRegister = X86Strategy::registers[op1];
-        o << "  movl    " << mappedRegister << ", %eax" << endl;
-    }
-    else
-    { // variable
-
-        Symbol *symbol = symbolTable->getSymbol(op1);
-        if (symbol != nullptr)
-        {
-            int variableOffset = symbol->memoryAddress;
-            o << "  movl    " << variableOffset << "(%rbp), %eax    # variable " << symbol->symbolName << endl;
-        }
-    }
+    _makeOperation("movl", op1, "%eax", symbolTable, o);
 
     // Operand 2
-    if (regex_match(op2, regex("-?[0-9]+")))
-    { // constant
-        o << "  movl    $" << op1 << ", %edx" << endl;
-    }
-    else if (op2[0] == '%')
-    { // register
-        string mappedRegister = X86Strategy::registers[op2];
-        o << "  movl    " << mappedRegister << ", %edx" << endl;
-    }
-    else
-    { // variable
-
-        Symbol *symbol = symbolTable->getSymbol(op2);
-        if (symbol != nullptr)
-        {
-            int variableOffset = symbol->memoryAddress;
-            o << "  movl    " << variableOffset << "(%rbp), %edx    # variable " << symbol->symbolName << endl;
-        }
-    }
+    _makeOperation("movl", op2, "%edx", symbolTable, o);
 
     o << "  orl     %edx, %eax" << endl;
     o << "  movzbl  %al, %eax" << endl;
@@ -636,6 +471,30 @@ void generateOrop(const IRInstr & instruction, ostream &o) {
 
 void generateAndop(const IRInstr & instruction, ostream &o) {
     
+    // dest = variable1 | variable1
+
+    vector<string> params = instruction.getParams();
+
+    string destination = params[0];
+    string op1 = params[1];
+    string op2 = params[2];
+
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+
+    // Operand 1
+    _makeOperation("movl", op1, "%eax", symbolTable, o);
+
+    // Operand 2
+    _makeOperation("movl", op2, "%edx", symbolTable, o);
+
+    o << "  andl     %edx, %eax" << endl;
+    o << "  movzbl  %al, %eax" << endl;
+
+    Symbol * destinationSymbol = symbolTable->getSymbol(destination);
+    int offset = destinationSymbol->memoryAddress;
+    o << "  movl    %eax," << offset << "(%rbp)    # variable " << destinationSymbol->symbolName << endl;
+    o << "  testb   %al, %al" << endl;
+
 }
 
 void generateCmpne(const IRInstr & instruction, ostream &o) {
@@ -649,57 +508,18 @@ void generateCmpgt(const IRInstr & instruction, ostream &o) {
     // Param1 : Destination
     string destination = params[0];
 
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+
     // Param2 : op1 (register, constant or variable)
     string operand1 = params[1];
-    if (regex_match(operand1, regex("-?[0-9]+")))
-    { // constant
-        o << "  movl    $" << operand1 << ", %eax" << endl;
-    }
-    else if (operand1[0] == '%')
-    { // register
-        string mappedRegister = X86Strategy::registers[operand1];
-        o << "  movl    " << mappedRegister << ", %eax" << endl;
-    }
-    else
-    { // variable
-
-        SymbolTable * symbolTable = instruction.getSymbolTable();
-
-        Symbol *symbol = symbolTable->getSymbol(operand1);
-        if (symbol != nullptr)
-        {
-            int variableOffset = symbol->memoryAddress;
-            o << "  movl    " << variableOffset << "(%rbp), %eax" << endl;
-        }
-    }
+    _makeOperation("movl", operand1, "%eax", symbolTable, o);
 
     // Param3 : op2 (register, constant or variable)
     string operand2 = params[2];
-    if (regex_match(operand2, regex("-?[0-9]+")))
-    { // constant
-        o << "  cmpl    $" << operand2 << ", %eax" << endl;
-    }
-    else if (operand2[0] == '%')
-    { // register
-        string mappedRegister = X86Strategy::registers[operand2];
-        o << "  cmpl    " << mappedRegister << ", %eax" << endl;
-    }
-    else
-    { // variable
-
-        SymbolTable * symbolTable = instruction.getSymbolTable();
-
-        Symbol *symbol = symbolTable->getSymbol(operand2);
-        if (symbol != nullptr)
-        {
-            int variableOffset = symbol->memoryAddress;
-            o << "  cmpl    " << variableOffset << "(%rbp), %eax" << endl;
-        }
-    }
+    _makeOperation("cmpl", operand2, "%eax", symbolTable, o);
 
     o << "  setg   %al"    << endl;
     o << "  movzbl  %al, %eax" << endl;
-
 
     // Destination
     if (destination[0] == '%')
@@ -710,9 +530,6 @@ void generateCmpgt(const IRInstr & instruction, ostream &o) {
     }
     else
     { // variable
-
-        SymbolTable * symbolTable = instruction.getSymbolTable();
-
         Symbol *symbol = symbolTable->getSymbol(destination);
         if (symbol != nullptr)
         {
@@ -730,53 +547,15 @@ void generateCmpge(const IRInstr & instruction, ostream &o) {
     // Param1 : Destination
     string destination = params[0];
 
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+
     // Param2 : op1 (register, constant or variable)
     string operand1 = params[1];
-    if (regex_match(operand1, regex("-?[0-9]+")))
-    { // constant
-        o << "  movl    $" << operand1 << ", %eax" << endl;
-    }
-    else if (operand1[0] == '%')
-    { // register
-        string mappedRegister = X86Strategy::registers[operand1];
-        o << "  movl    " << mappedRegister << ", %eax" << endl;
-    }
-    else
-    { // variable
-
-        SymbolTable * symbolTable = instruction.getSymbolTable();
-
-        Symbol *symbol = symbolTable->getSymbol(operand1);
-        if (symbol != nullptr)
-        {
-            int variableOffset = symbol->memoryAddress;
-            o << "  movl    " << variableOffset << "(%rbp), %eax" << endl;
-        }
-    }
+    _makeOperation("movl", operand1, "%eax", symbolTable, o);
 
     // Param3 : op2 (register, constant or variable)
     string operand2 = params[2];
-    if (regex_match(operand2, regex("-?[0-9]+")))
-    { // constant
-        o << "  cmpl    $" << operand2 << ", %eax" << endl;
-    }
-    else if (operand2[0] == '%')
-    { // register
-        string mappedRegister = X86Strategy::registers[operand2];
-        o << "  cmpl    " << mappedRegister << ", %eax" << endl;
-    }
-    else
-    { // variable
-
-        SymbolTable * symbolTable = instruction.getSymbolTable();
-
-        Symbol *symbol = symbolTable->getSymbol(operand2);
-        if (symbol != nullptr)
-        {
-            int variableOffset = symbol->memoryAddress;
-            o << "  cmpl    " << variableOffset << "(%rbp), %eax" << endl;
-        }
-    }
+    _makeOperation("cmpl", operand2, "%eax", symbolTable, o);
 
     o << "  setge   %al"    << endl;
     o << "  movzbl  %al, %eax" << endl;
@@ -812,53 +591,15 @@ void generateCmplt(const IRInstr & instruction, ostream &o) {
     // Param1 : Destination
     string destination = params[0];
 
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+
     // Param2 : op1 (register, constant or variable)
     string operand1 = params[1];
-    if (regex_match(operand1, regex("-?[0-9]+")))
-    { // constant
-        o << "  movl    $" << operand1 << ", %eax" << endl;
-    }
-    else if (operand1[0] == '%')
-    { // register
-        string mappedRegister = X86Strategy::registers[operand1];
-        o << "  movl    " << mappedRegister << ", %eax" << endl;
-    }
-    else
-    { // variable
-
-        SymbolTable * symbolTable = instruction.getSymbolTable();
-
-        Symbol *symbol = symbolTable->getSymbol(operand1);
-        if (symbol != nullptr)
-        {
-            int variableOffset = symbol->memoryAddress;
-            o << "  movl    " << variableOffset << "(%rbp), %eax" << endl;
-        }
-    }
+    _makeOperation("movl", operand1, "%eax", symbolTable, o);
 
     // Param3 : op2 (register, constant or variable)
     string operand2 = params[2];
-    if (regex_match(operand2, regex("-?[0-9]+")))
-    { // constant
-        o << "  cmpl    $" << operand2 << ", %eax" << endl;
-    }
-    else if (operand2[0] == '%')
-    { // register
-        string mappedRegister = X86Strategy::registers[operand2];
-        o << "  cmpl    " << mappedRegister << ", %eax" << endl;
-    }
-    else
-    { // variable
-
-        SymbolTable * symbolTable = instruction.getSymbolTable();
-
-        Symbol *symbol = symbolTable->getSymbol(operand2);
-        if (symbol != nullptr)
-        {
-            int variableOffset = symbol->memoryAddress;
-            o << "  cmpl    " << variableOffset << "(%rbp), %eax" << endl;
-        }
-    }
+    _makeOperation("cmpl", operand2, "%eax", symbolTable, o);
 
     o << "  setl   %al"    << endl;
     o << "  movzbl  %al, %eax" << endl;
@@ -894,57 +635,18 @@ void generateCmple(const IRInstr & instruction, ostream &o) {
     // Param1 : Destination
     string destination = params[0];
 
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+
     // Param2 : op1 (register, constant or variable)
     string operand1 = params[1];
-    if (regex_match(operand1, regex("-?[0-9]+")))
-    { // constant
-        o << "  movl    $" << operand1 << ", %eax" << endl;
-    }
-    else if (operand1[0] == '%')
-    { // register
-        string mappedRegister = X86Strategy::registers[operand1];
-        o << "  movl    " << mappedRegister << ", %eax" << endl;
-    }
-    else
-    { // variable
-
-        SymbolTable * symbolTable = instruction.getSymbolTable();
-
-        Symbol *symbol = symbolTable->getSymbol(operand1);
-        if (symbol != nullptr)
-        {
-            int variableOffset = symbol->memoryAddress;
-            o << "  movl    " << variableOffset << "(%rbp), %eax" << endl;
-        }
-    }
+    _makeOperation("movl", operand1, "%eax", symbolTable, o);
 
     // Param3 : op2 (register, constant or variable)
     string operand2 = params[2];
-    if (regex_match(operand2, regex("-?[0-9]+")))
-    { // constant
-        o << "  cmpl    $" << operand2 << ", %eax" << endl;
-    }
-    else if (operand2[0] == '%')
-    { // register
-        string mappedRegister = X86Strategy::registers[operand2];
-        o << "  cmpl    " << mappedRegister << ", %eax" << endl;
-    }
-    else
-    { // variable
-
-        SymbolTable * symbolTable = instruction.getSymbolTable();
-
-        Symbol *symbol = symbolTable->getSymbol(operand2);
-        if (symbol != nullptr)
-        {
-            int variableOffset = symbol->memoryAddress;
-            o << "  cmpl    " << variableOffset << "(%rbp), %eax" << endl;
-        }
-    }
+    _makeOperation("cmpl", operand2, "%eax", symbolTable, o);
 
     o << "  setle   %al"    << endl;
     o << "  movzbl  %al, %eax" << endl;
-
 
     // Destination
     if (destination[0] == '%')
@@ -991,7 +693,7 @@ void X86Strategy::generate_jump(const BasicBlock &basicBlock, ostream &o) {
         o << "  jmp " << basicBlock.exit_true->label << " # unconditional jump to true block" << endl;
     } else { // Conditional jump
 		// o << "  cmpl    $0, %al" << endl;
-		o << "  jne  " << basicBlock.exit_false->label << " # jump to false branch" << endl;
+		o << "  je  " << basicBlock.exit_false->label << " # jump to false branch" << endl;
 	}
 }
 
@@ -1101,7 +803,6 @@ void X86Strategy::generate_prologue(ostream &o, const CFG & cfg)
 
 void X86Strategy::generate_epilogue(ostream &o, const CFG &cfg)
 {
-
     o << "   movq	%rbp, %rsp\n"
          << "   popq	%rbp\n";
 
