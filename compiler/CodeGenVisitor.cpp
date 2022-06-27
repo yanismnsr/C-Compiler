@@ -89,6 +89,44 @@ std::any CodeGenVisitor::visitIfInstr(ifccParser::IfInstrContext *ctx)
 	return (string)testResultVariableName;
 }
 
+std::any CodeGenVisitor::visitWhileInstr(ifccParser::WhileInstrContext *ctx)
+{
+    // Current basic block
+    BasicBlock *currentBasicBlock = this->cfg.current_bb;
+
+    // Generate while condition basic block
+    BasicBlock * whileConditionBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
+    this->cfg.add_bb(whileConditionBb);
+    string testResultVariableName = any_cast<string>(visit(ctx->comparison()));
+
+    Symbol tempVariable = currentBasicBlock->symbolTable->addTemporaryVariable();
+    PrimitiveType *pt = PrimitiveType::getInstance();
+    Type *boolType = pt->getType("bool");
+    whileConditionBb->add_IRInstr(IRInstr::Operation::cmp_eq, boolType, {tempVariable.symbolName, testResultVariableName, "0"});
+
+    // Generate while body block
+    BasicBlock * trueBlock = new BasicBlock(&cfg, cfg.new_BB_name(), *this->cfg.current_bb);
+    this->cfg.add_bb(trueBlock);
+    this->previousBlockIsIfBlock = true;
+    if (ctx->instr()) {
+        visit(ctx->instr());
+    } else {
+        visit(ctx->block());
+    }
+    trueBlock->exit_true = whileConditionBb; // recheck while condition
+
+    // Exit default block
+    BasicBlock * defaultBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
+    this->cfg.add_bb(defaultBb);
+    whileConditionBb->exit_false = defaultBb;
+
+    this->cfg.current_bb = defaultBb;
+    this->endOfBlock = true;
+
+    return (string)testResultVariableName;
+
+}
+
 std::any CodeGenVisitor::visitBlock(ifccParser::BlockContext *ctx)
 {
 

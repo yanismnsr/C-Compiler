@@ -44,6 +44,8 @@ public:
 
   	virtual std::any visitIfInstr(ifccParser::IfInstrContext *ctx) override;
 
+    virtual std::any visitWhileInstr(ifccParser::WhileInstrContext *ctx) override;
+
 	virtual std::any visitBlock(ifccParser::BlockContext *ctx) override ;
 
 	virtual std::any visitExprConst(ifccParser::ExprConstContext *ctx) override;

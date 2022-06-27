@@ -25,9 +25,11 @@ affectation :
 
 ifInstr: 'if' '(' comparison ')' (instr | block) elseInstr? ;
 
-elseInstr: 'else' (instr | ifInstr | block) ;
+whileInstr: 'while' '(' comparison ')' (instr | block) ;
 
-block : '{' ( (instr ';') | block | ifInstr )*  '}' ;
+elseInstr: 'else' (instr | ifInstr | block | whileInstr) ;
+
+block : '{' ( (instr ';') | block | ifInstr | whileInstr)*  '}' ;
 
 expr:
     IDENTIFIER                                                                              # exprIdentifier
