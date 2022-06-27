@@ -466,7 +466,33 @@ void generateDiv(const IRInstr &instruction, ostream &o)
 
 void generateCall(const IRInstr &instruction, ostream &o)
 {
-    // TODO implement this function
+	vector<string> params = instruction.getParams();
+	string paramsRegisters[] = {"%r9d", "%r8d", "%ecx", "%edx", "%esi", "%edi"};
+	
+	// put each param into registers
+	for (int i = 0; i<params.size(); i++) {
+		if (regex_match(params[i], regex("-?[0-9]+")))
+		{ // constant
+			o << "movl	$" + params[i] << ", " << paramsRegisters[i] << "	#p ut param (constant) into register" << endl;
+		}
+		else if (params[i][0] == '%')
+		{ // register
+			o << "movl	" + X86Strategy::registers[params[i]] << ", " << paramsRegisters[i] << "	# put param (register) into register" << endl;
+		}
+		else
+		{ // variable
+			SymbolTable * symbolTable = instruction.getSymbolTable();
+			Symbol *symbol = symbolTable->getSymbol(params[i]);
+			if (symbol != nullptr)
+			{
+				o << "movl	" + to_string(symbol->memoryAddress) + "(%rbp), " << paramsRegisters[i] << "	# put param (variable) into register" << endl;
+			}
+		}
+	}
+
+	string functionName = instruction.getContainingBasicBlock()->label;
+	o << "call " << functionName << endl;
+}
 }
 
 string getOperandString(string operandInParam, SymbolTable& symbolTable)
