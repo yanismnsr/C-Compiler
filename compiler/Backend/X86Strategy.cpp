@@ -608,15 +608,15 @@ void generateOrop(const IRInstr & instruction, ostream &o) {
     { // constant
         o << "  movl    $" << op1 << ", %edx" << endl;
     }
-    else if (op1[0] == '%')
+    else if (op2[0] == '%')
     { // register
-        string mappedRegister = X86Strategy::registers[op1];
+        string mappedRegister = X86Strategy::registers[op2];
         o << "  movl    " << mappedRegister << ", %edx" << endl;
     }
     else
     { // variable
 
-        Symbol *symbol = symbolTable->getSymbol(op1);
+        Symbol *symbol = symbolTable->getSymbol(op2);
         if (symbol != nullptr)
         {
             int variableOffset = symbol->memoryAddress;
@@ -629,7 +629,8 @@ void generateOrop(const IRInstr & instruction, ostream &o) {
 
     Symbol * destinationSymbol = symbolTable->getSymbol(destination);
     int offset = destinationSymbol->memoryAddress;
-    o << "  movl    " << offset << "(%rbp), %edx    # variable " << destinationSymbol->symbolName << endl;
+    o << "  movl    %eax," << offset << "(%rbp)    # variable " << destinationSymbol->symbolName << endl;
+    o << "  testb   %al, %al" << endl;
 
 }
 
