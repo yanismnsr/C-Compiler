@@ -116,9 +116,10 @@ std::any CodeGenVisitor::visitWhileInstr(ifccParser::WhileInstrContext *ctx)
     trueBlock->exit_true = whileConditionBb; // recheck while condition
 
     // Exit default block
-    BasicBlock * defaultBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
+    BasicBlock * defaultBb = new BasicBlock(&cfg, cfg.new_BB_name(), *whileConditionBb);
     this->cfg.add_bb(defaultBb);
-    whileConditionBb->exit_false = defaultBb;
+    //whileConditionBb->exit_false = defaultBb;
+    this->cfg.add_exit_falseBB(whileConditionBb, falseBb, defaultBb);
 
     this->cfg.current_bb = defaultBb;
     this->endOfBlock = true;
