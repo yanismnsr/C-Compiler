@@ -55,7 +55,7 @@ std::any CodeGenVisitor::visitIfInstr(ifccParser::IfInstrContext *ctx)
 	PrimitiveType *pt = PrimitiveType::getInstance();
 	Type *boolType = pt->getType("bool");
 	ifBb->add_IRInstr(IRInstr::Operation::cmp_eq, boolType, {tempVariable.symbolName, testResultVariableName, "0"});
-	
+
 
 	// Generate true block
 	BasicBlock * trueBlock = new BasicBlock(&cfg, cfg.new_BB_name(), *this->cfg.current_bb);
@@ -66,7 +66,6 @@ std::any CodeGenVisitor::visitIfInstr(ifccParser::IfInstrContext *ctx)
 	} else {
 		visit(ctx->block());
 	}
-	
 
 	// Else default block
 	BasicBlock * defaultBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
@@ -199,6 +198,7 @@ std::any CodeGenVisitor::visitReturnexp(ifccParser::ReturnexpContext *ctx)
 
 std::any CodeGenVisitor::visitDeclaration(ifccParser::DeclarationContext *ctx)
 {
+
 	SymbolTable *symbolTable = this->getSymbolTableOfCurrentBlock();
 
 	std::vector<antlr4::tree::TerminalNode *> onlyDeclarations = ctx->IDENTIFIER();
