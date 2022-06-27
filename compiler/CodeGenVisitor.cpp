@@ -84,7 +84,7 @@ std::any CodeGenVisitor::visitIfInstr(ifccParser::IfInstrContext *ctx)
 	}
 
 	this->cfg.current_bb = defaultBb;
-	this->endOfBlock = true;
+	// this->endOfBlock = true;
 
 	return (string)testResultVariableName;
 }
