@@ -25,7 +25,7 @@ affectation :
 
 ifInstr: 'if' '(' expr ')' (instr | block) elseInstr? ;
 
-whileInstr: 'while' '(' comparison ')' (instr | block) ;
+whileInstr: 'while' '(' expr ')' (instr | block) ;
 
 elseInstr: 'else' (instr | ifInstr | block | whileInstr) ;
 
