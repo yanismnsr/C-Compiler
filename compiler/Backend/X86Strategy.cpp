@@ -546,7 +546,7 @@ void generateCmpeq(const IRInstr & instruction, ostream &o) {
         }
     }
 
-    o << "  setne    %al" << endl;
+    o << "  sete    %al" << endl;
     o << "  andb    $1, %al" << endl;
     o << "  movzbl  %al, %eax" << endl;
 
