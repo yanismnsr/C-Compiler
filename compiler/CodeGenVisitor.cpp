@@ -425,3 +425,21 @@ std::any CodeGenVisitor::visitInstr(ifccParser::InstrContext *ctx) {
 	return visitChildren(ctx);
 
 }
+
+
+std::any CodeGenVisitor::visitXorOperation(ifccParser::XorOperationContext *ctx) {
+
+	SymbolTable *symbolTable = this->getSymbolTableOfCurrentBlock();
+
+	string expr1VarName = any_cast<string>(visit(ctx->expr(0)));
+	string expr2VarName = any_cast<string>(visit(ctx->expr(1)));
+
+	Symbol temporarySymbolAdded = symbolTable->addTemporaryVariable();
+
+	PrimitiveType *pt = PrimitiveType::getInstance();
+	Type *intType = pt->getType("int");
+
+	this->cfg.current_bb->add_IRInstr(IRInstr::Operation::xorOp, intType, {temporarySymbolAdded.symbolName, expr1VarName, expr2VarName});
+	
+	return (string)temporarySymbolAdded.symbolName;
+}

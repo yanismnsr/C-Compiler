@@ -67,6 +67,8 @@ public:
 
 	virtual std::any visitInstr(ifccParser::InstrContext *ctx) override;
 
+	virtual std::any visitXorOperation(ifccParser::XorOperationContext *ctx) override;
+
 	const CFG & getCFG() const;
 
 	SymbolTable * getSymbolTableOfCurrentBlock();

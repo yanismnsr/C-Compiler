@@ -37,6 +37,7 @@ expr:
     | op=(MINUS | ADD) expr                                                                 # unaryExpression
     | expr op=(MULT | DIV) expr                                                             # multdiv
     | expr op=(ADD | MINUS) expr                                                            # addmin
+    | expr XOR expr                                                                         # xorOperation
     | '(' expr ')'                                                                          # parenthesis
     | expr COMPARISONOPERATOR expr                                                          # simpleComparison
     | expr CONDOPERATORS expr                                                               # multipleOperatorsComparison
@@ -68,3 +69,4 @@ MULT : '*' ;
 DIV  : '/' ;
 ADD : '+' ;
 MINUS : '-' ;
+XOR : '^';

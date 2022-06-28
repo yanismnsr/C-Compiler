@@ -60,7 +60,7 @@ Exemple de IR.h trouvé sur moodle (peut-être qu'il faut le ranger ailleurs)
  * 		* wmem constant variableName
  *
  * ## 3 parameters operations
- * 	### add, sub, mul, div, cmp_e, cmp_ne, cmp_gt, cmp_ge, cmp_lt, cmp_le, andop, orop
+ * 	### add, sub, mul, div, cmp_e, cmp_ne, cmp_gt, cmp_ge, cmp_lt, cmp_le, andop, orop, xor
  * 		Operand one : Destination
  * 		Operand two : op1 (register, constant or variable)
  * 		Operand three : op2 (register, constant or variable)
@@ -80,6 +80,7 @@ class IRInstr {
 		sub,
 		mul,
 		div,
+		xorOp,
 		rmem,
 		wmem,
 		pushq,
