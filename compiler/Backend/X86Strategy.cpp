@@ -281,6 +281,38 @@ void generateSub(const IRInstr &instruction, ostream &o)
     }
 }
 
+void generateXor(const IRInstr &instruction, ostream &o)
+{
+    vector<string> params = instruction.getParams();
+
+    // Param1 : Destination (register)
+    string destination = params[0];
+    string mappedDestination = X86Strategy::registers[destination];
+
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+
+    // Param2 : op1 (register, constant or variable)
+    string operand1 = params[1];
+    _makeOperation("movl", operand1, "%eax", symbolTable, o);
+
+    // Param3 : op2 (register, constant or variable)
+    string operand2 = params[2];
+    _makeOperation("xorl", operand2, "%eax", symbolTable, o);
+
+    // Destination
+    if (destination[0] == '%'){ // register
+        o << "  movl    %eax, " << mappedDestination << endl;
+    }
+    else{ // variable
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+        Symbol *symbol = symbolTable->getSymbol(destination);
+        if (symbol != nullptr){
+            int variableOffset = symbol->memoryAddress;
+            o << "  movl    %eax, " << variableOffset << "(%rbp)    #variable " << symbol->symbolName << endl;
+        }
+    }
+}
+
 void generateMul(const IRInstr &instruction, ostream &o)
 {
     // Operand 1 : Destination
@@ -734,6 +766,9 @@ void X86Strategy::generate_assembly(const IRInstr &instruction, ostream &o)
         break;
     case (IRInstr::Operation::sub):
         generateSub(instruction, o);
+        break;
+    case (IRInstr::Operation::xorOp):
+        generateXor(instruction, o);
         break;
     case (IRInstr::Operation::mul):
         generateMul(instruction, o);
