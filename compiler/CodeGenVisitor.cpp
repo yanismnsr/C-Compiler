@@ -25,12 +25,14 @@ std::any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 	BasicBlock *prologue = new BasicBlock(&this->cfg, "prologue");
 	this->cfg.add_bb(prologue);
 
-	BasicBlock *epilogue = new BasicBlock(&this->cfg, "epilogue");
-	this->cfg.add_bb(epilogue);
+	this->epilogue = new BasicBlock(&this->cfg, "epilogue");
+	this->cfg.add_bb(this->epilogue);
+
+	this->cfg.current_bb = prologue;
+	prologue->exit_true = nullptr;
 	epilogue->exit_true = nullptr;
 
-	prologue->exit_true = epilogue;
-	this->cfg.current_bb = prologue;
+	// prologue->exit_true = this->epilogue;
 
 	auto visitResult = visitChildren(ctx);
 
@@ -47,18 +49,17 @@ std::any CodeGenVisitor::visitIfInstr(ifccParser::IfInstrContext *ctx)
 	BasicBlock *currentBasicBlock = this->cfg.current_bb;
 
 	// Generate if basic block 
-	BasicBlock * ifBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
+	BasicBlock * ifBb = new BasicBlock(&cfg, cfg.new_BB_name() + "ifbb", *currentBasicBlock);
 	this->cfg.add_bb(ifBb);
- 	string testResultVariableName = any_cast<string>(visit(ctx->comparison()));
+ 	string testResultVariableName = any_cast<string>(visit(ctx->expr()));
 
-	Symbol tempVariable = currentBasicBlock->symbolTable->addTemporaryVariable();
+	Symbol tempVariable = cfg.current_bb->symbolTable->addTemporaryVariable();
 	PrimitiveType *pt = PrimitiveType::getInstance();
 	Type *boolType = pt->getType("bool");
 	ifBb->add_IRInstr(IRInstr::Operation::cmp_eq, boolType, {tempVariable.symbolName, testResultVariableName, "0"});
 
-
 	// Generate true block
-	BasicBlock * trueBlock = new BasicBlock(&cfg, cfg.new_BB_name(), *this->cfg.current_bb);
+	BasicBlock * trueBlock = new BasicBlock(&cfg, cfg.new_BB_name() + "trueBb", *this->cfg.current_bb);
 	this->cfg.add_bb(trueBlock);
 	this->previousBlockIsIfBlock = true;
 	if (ctx->instr()) {
@@ -66,27 +67,77 @@ std::any CodeGenVisitor::visitIfInstr(ifccParser::IfInstrContext *ctx)
 	} else {
 		visit(ctx->block());
 	}
+	trueBlock = this->cfg.current_bb;
 
-	// Else default block
-	BasicBlock * defaultBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
-	this->cfg.add_bb(defaultBb);
-
+	BasicBlock * falseBb = nullptr;
 	if (ctx->elseInstr()) {
 
 		// False block
-		BasicBlock * falseBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
-		this->cfg.add_exit_falseBB(ifBb, falseBb, defaultBb);
+		falseBb = new BasicBlock(&cfg, cfg.new_BB_name() + "falseBb", *currentBasicBlock);
+		this->cfg.add_exit_falseBB(ifBb, falseBb);
 		this->previousBlockIsIfBlock = true;
+		this->endOfBlock = false;
 		visit(ctx->elseInstr());
+		falseBb = this->cfg.current_bb;
 
+	}
+
+	BasicBlock * defaultBb = new BasicBlock(&cfg, cfg.new_BB_name()+ "defaultBb", *currentBasicBlock);
+	this->cfg.add_bb(defaultBb);
+	if (trueBlock->exit_true != this->epilogue) {
+		trueBlock->exit_true = defaultBb;
+	}
+	if (falseBb && falseBb->exit_true != epilogue) {
+		falseBb->exit_true = defaultBb;
 	} else {
 		ifBb->exit_false = defaultBb;
 	}
 
 	this->cfg.current_bb = defaultBb;
-	this->endOfBlock = true;
+	this->endOfBlock = false;
+	// this->endOfBlock = true;
 
 	return (string)testResultVariableName;
+}
+
+std::any CodeGenVisitor::visitWhileInstr(ifccParser::WhileInstrContext *ctx)
+{
+    // Current basic block
+    BasicBlock *currentBasicBlock = this->cfg.current_bb;
+
+    // Generate while condition basic block
+    BasicBlock * whileConditionBb = new BasicBlock(&cfg, cfg.new_BB_name(), *currentBasicBlock);
+    this->cfg.add_bb(whileConditionBb);
+    string testResultVariableName = any_cast<string>(visit(ctx->expr()));
+
+    Symbol tempVariable = this->cfg.current_bb->symbolTable->addTemporaryVariable();
+    PrimitiveType *pt = PrimitiveType::getInstance();
+    Type *boolType = pt->getType("bool");
+    whileConditionBb->add_IRInstr(IRInstr::Operation::cmp_eq, boolType, {tempVariable.symbolName, testResultVariableName, "0"});
+
+    // Generate while body block
+    BasicBlock * trueBlock = new BasicBlock(&cfg, cfg.new_BB_name(), *this->cfg.current_bb);
+    this->cfg.add_bb(trueBlock);
+    this->previousBlockIsIfBlock = true;
+    if (ctx->instr()) {
+        visit(ctx->instr());
+    } else {
+        visit(ctx->block());
+    }
+    // trueBlock->exit_true = whileConditionBb; // recheck while condition
+
+	this->cfg.current_bb->exit_true = whileConditionBb;
+
+    // // Exit default block
+	this->cfg.current_bb = whileConditionBb;
+    BasicBlock * defaultBb = new BasicBlock(&cfg, cfg.new_BB_name(), *whileConditionBb);
+    this->cfg.add_exit_falseBB(whileConditionBb, defaultBb);
+
+    // this->cfg.current_bb = defaultBb;
+    this->endOfBlock = true;
+
+    return (string)testResultVariableName;
+
 }
 
 std::any CodeGenVisitor::visitBlock(ifccParser::BlockContext *ctx)
@@ -144,17 +195,13 @@ std::any CodeGenVisitor::visitSimpleComparison(ifccParser::SimpleComparisonConte
 	return (string)symbol.symbolName;
 }
 
-std::any CodeGenVisitor::visitUnaryComparison(ifccParser::UnaryComparisonContext *ctx) {
-	return visitChildren(ctx);
-}
-
 std::any CodeGenVisitor::visitMultipleOperatorsComparison(ifccParser::MultipleOperatorsComparisonContext *ctx) {
 	// TODO implement this function
 
 	BasicBlock * currentBb = this->cfg.current_bb;
 
-	string operand1 = any_cast<string>(visit(ctx->comparison(0)));
-	string operand2 = any_cast<string>(visit(ctx->comparison(1)));
+	string operand1 = any_cast<string>(visit(ctx->expr(0)));
+	string operand2 = any_cast<string>(visit(ctx->expr(1)));
 
 	// Temporary variable
 	SymbolTable *symbolTable = this->getSymbolTableOfCurrentBlock();
@@ -192,6 +239,9 @@ std::any CodeGenVisitor::visitReturnexp(ifccParser::ReturnexpContext *ctx)
 	PrimitiveType *pt = PrimitiveType::getInstance();
 	Type *voidType = pt->getType("void");
 	bb->add_IRInstr(IRInstr::Operation::returnVar, voidType, {exprVarName});
+
+	bb->exit_true = this->epilogue;
+	this->cfg.previousBlockIsReturnBlock = true;
 
 	return 0;
 }
@@ -368,6 +418,28 @@ std::any CodeGenVisitor::visitInstr(ifccParser::InstrContext *ctx) {
 		this->endOfBlock = false;
 	}
 
+	if (this->cfg.previousBlockIsReturnBlock) {
+		this->cfg.previousBlockIsReturnBlock = false;
+	}
+
 	return visitChildren(ctx);
 
+}
+
+
+std::any CodeGenVisitor::visitXorOperation(ifccParser::XorOperationContext *ctx) {
+
+	SymbolTable *symbolTable = this->getSymbolTableOfCurrentBlock();
+
+	string expr1VarName = any_cast<string>(visit(ctx->expr(0)));
+	string expr2VarName = any_cast<string>(visit(ctx->expr(1)));
+
+	Symbol temporarySymbolAdded = symbolTable->addTemporaryVariable();
+
+	PrimitiveType *pt = PrimitiveType::getInstance();
+	Type *intType = pt->getType("int");
+
+	this->cfg.current_bb->add_IRInstr(IRInstr::Operation::xorOp, intType, {temporarySymbolAdded.symbolName, expr1VarName, expr2VarName});
+	
+	return (string)temporarySymbolAdded.symbolName;
 }

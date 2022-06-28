@@ -60,7 +60,7 @@ Exemple de IR.h trouvé sur moodle (peut-être qu'il faut le ranger ailleurs)
  * 		* wmem constant variableName
  *
  * ## 3 parameters operations
- * 	### add, sub, mul, div, cmp_e, cmp_ne, cmp_gt, cmp_ge, cmp_lt, cmp_le, andop, orop
+ * 	### add, sub, mul, div, cmp_e, cmp_ne, cmp_gt, cmp_ge, cmp_lt, cmp_le, andop, orop, xor
  * 		Operand one : Destination
  * 		Operand two : op1 (register, constant or variable)
  * 		Operand three : op2 (register, constant or variable)
@@ -80,6 +80,7 @@ class IRInstr {
 		sub,
 		mul,
 		div,
+		xorOp,
 		rmem,
 		wmem,
 		pushq,
@@ -200,6 +201,8 @@ class CFG {
 
 	void add_exit_falseBB (BasicBlock * ifBb, BasicBlock * newBb, BasicBlock * defaultBb); 
 
+	void add_exit_falseBB (BasicBlock * ifBb, BasicBlock * newBb);
+
 	// x86 code generation: could be encapsulated in a processor class in a retargetable compiler
 	void gen_asm(ostream& o) const;
 	// string IR_reg_to_asm(string reg); /**< helper method: inputs a IR reg or input variable, returns e.g. "-24(%rbp)" for the proper value of 24 */
@@ -226,6 +229,8 @@ class CFG {
 
 	string getFunctionName() const;
 	vector <BasicBlock*> bbs; /**< all the basic blocks of this CFG*/
+
+	bool previousBlockIsReturnBlock = false;
 
  protected:
 	map <string, Type*> SymbolType; /**< part of the symbol table  */

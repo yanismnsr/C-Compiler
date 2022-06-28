@@ -23,11 +23,13 @@ affectation :
     IDENTIFIER '=' expr
     ;
 
-ifInstr: 'if' '(' comparison ')' (instr | block) elseInstr? ;
+ifInstr: 'if' '(' expr ')' (instr | block) elseInstr? ;
 
-elseInstr: 'else' (instr | ifInstr | block) ;
+whileInstr: 'while' '(' expr ')' (instr | block) ;
 
-block : '{' ( (instr ';') | block | ifInstr )*  '}' ;
+elseInstr: 'else' (instr | ifInstr | block | whileInstr) ;
+
+block : '{' ( (instr ';') | block | ifInstr | whileInstr)*  '}' ;
 
 expr:
     IDENTIFIER                                                                              # exprIdentifier
@@ -35,16 +37,12 @@ expr:
     | op=(MINUS | ADD) expr                                                                 # unaryExpression
     | expr op=(MULT | DIV) expr                                                             # multdiv
     | expr op=(ADD | MINUS) expr                                                            # addmin
+    | expr XOR expr                                                                         # xorOperation
     | '(' expr ')'                                                                          # parenthesis
+    | expr COMPARISONOPERATOR expr                                                          # simpleComparison
+    | expr CONDOPERATORS expr                                                               # multipleOperatorsComparison
     ;
 
-
-
-comparison : 
-    expr                                            # unaryComparison
-    | expr COMPARISONOPERATOR expr                  # simpleComparison
-    | comparison CONDOPERATORS comparison           # multipleOperatorsComparison
-    ;
 
 CONDOPERATORS :
     '&' | '|'
@@ -71,3 +69,4 @@ MULT : '*' ;
 DIV  : '/' ;
 ADD : '+' ;
 MINUS : '-' ;
+XOR : '^';
