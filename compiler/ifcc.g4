@@ -40,8 +40,8 @@ expr:
     | '(' expr ')'                                                                          # parenthesis
     | expr COMPARISONOPERATOR expr                                                          # simpleComparison
     | expr CONDOPERATORS expr                                                               # multipleOperatorsComparison
+    | affectation                                                                           # exprAffectation
     ;
-
 
 CONDOPERATORS :
     '&' | '|'
