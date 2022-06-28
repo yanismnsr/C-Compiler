@@ -34,7 +34,7 @@ block : '{' ( (instr ';') | block | ifInstr | whileInstr)*  '}' ;
 expr:
     IDENTIFIER                                                                              # exprIdentifier
     | CONST                                                                                 # exprConst
-    | op=(MINUS | ADD) expr                                                                 # unaryExpression
+    | op=(MINUS | ADD | UNARY_NOT | UNARY_NOT_WITH_MINUS) expr                                                     # unaryExpression
     | expr op=(MULT | DIV) expr                                                             # multdiv
     | expr op=(ADD | MINUS) expr                                                            # addmin
     | expr XOR expr                                                                         # xorOperation
@@ -70,3 +70,5 @@ DIV  : '/' ;
 ADD : '+' ;
 MINUS : '-' ;
 XOR : '^';
+UNARY_NOT : '!';
+UNARY_NOT_WITH_MINUS : '!-';
