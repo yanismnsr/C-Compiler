@@ -396,7 +396,7 @@ std::any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 	bb->add_IRInstr(IRInstr::Operation::copy, intType, {rValueVariableName, variableName});
 	symbolTable->setVariableIsInitialized(variableName, true);
 
-	return "0";
+    return variableName;
 }
 
 const CFG &CodeGenVisitor::getCFG() const
