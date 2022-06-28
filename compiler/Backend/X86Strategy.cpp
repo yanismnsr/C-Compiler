@@ -250,7 +250,6 @@ void generateAdd(const IRInstr &instruction, ostream &o)
 
 void generateSub(const IRInstr &instruction, ostream &o)
 {
-    // TODO implement this function
     vector<string> params = instruction.getParams();
 
     // Param1 : Destination (register)
@@ -279,6 +278,30 @@ void generateSub(const IRInstr &instruction, ostream &o)
             o << "  movl    %eax, " << variableOffset << "(%rbp)    #variable " << symbol->symbolName << endl;
         }
     }
+}
+
+void generateUnaryNot(const IRInstr &instruction, ostream &o)
+{
+	// 0 = false => $0
+	// other value = true => $1
+
+    vector<string> params = instruction.getParams();
+    string destination = params[0];
+    string operand = params[1];
+
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+
+    // Operand
+    _makeOperation("movl", operand, "%eax", symbolTable, o);
+
+    o << "  test   %eax, %eax" << endl;
+    o << "  sete   %al" << endl;
+	o << "  movzbl   %al, %eax" << endl;
+
+	// Destination
+    Symbol * destinationSymbol = symbolTable->getSymbol(destination);
+    int offset = destinationSymbol->memoryAddress;
+    o << "  movl   %eax," << offset << "(%rbp)    # variable " << destinationSymbol->symbolName << endl;
 }
 
 void generateXor(const IRInstr &instruction, ostream &o)
@@ -766,6 +789,9 @@ void X86Strategy::generate_assembly(const IRInstr &instruction, ostream &o)
         break;
     case (IRInstr::Operation::sub):
         generateSub(instruction, o);
+        break;
+	case (IRInstr::Operation::unary_not):
+        generateUnaryNot(instruction, o);
         break;
     case (IRInstr::Operation::xorOp):
         generateXor(instruction, o);
