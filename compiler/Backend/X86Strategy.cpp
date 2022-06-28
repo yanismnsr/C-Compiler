@@ -553,7 +553,45 @@ void generateAndop(const IRInstr & instruction, ostream &o) {
 }
 
 void generateCmpne(const IRInstr & instruction, ostream &o) {
+// TODO check if negative constants work
+    vector<string> params = instruction.getParams();
 
+    // Param1 : Destination
+    string destination = params[0];
+
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+
+    // Param2 : op1 (register, constant or variable)
+    string operand1 = params[1];
+    _makeOperation("movl", operand1, "%eax", symbolTable, o);
+
+
+    // Param3 : op2 (register, constant or variable)
+    string operand2 = params[2];
+    _makeOperation("cmpl", operand2, "%eax", symbolTable, o);
+
+    o << "  setne    %al" << endl;
+    o << "  movzbl  %al, %eax" << endl;
+
+    // Destination
+    if (destination[0] == '%')
+    { // register
+        string mappedDestination = X86Strategy::registers[destination];
+
+        o << "  movl    %eax, " << mappedDestination << endl;
+    }
+    else
+    { // variable
+
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+
+        Symbol *symbol = symbolTable->getSymbol(destination);
+        if (symbol != nullptr)
+        {
+            int variableOffset = symbol->memoryAddress;
+            o << "  movl    %eax, " << variableOffset << "(%rbp)        # variable " << symbol->symbolName << endl;
+        }
+    }
 }
 
 void generateCmpgt(const IRInstr & instruction, ostream &o) {
