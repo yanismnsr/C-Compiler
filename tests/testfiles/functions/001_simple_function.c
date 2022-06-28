@@ -1,4 +1,4 @@
-int function() {
+int function () {
     return 3;
 }
 

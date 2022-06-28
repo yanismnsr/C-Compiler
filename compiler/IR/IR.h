@@ -227,10 +227,15 @@ class CFG {
 
 	bool getHasError() const; 
 
+	int getNumberOfVariables() const;
+
 	string getFunctionName() const;
 	vector <BasicBlock*> bbs; /**< all the basic blocks of this CFG*/
 
 	bool previousBlockIsReturnBlock = false;
+
+	BasicBlock * epilogue;
+	string functionName;
 
  protected:
 	map <string, Type*> SymbolType; /**< part of the symbol table  */
@@ -243,5 +248,4 @@ class CFG {
 	bool hasReturnStatement = false;
 	bool hasError = false;
 
-	string functionName;
 };

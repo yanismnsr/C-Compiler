@@ -409,9 +409,12 @@ void generateCall(const IRInstr &instruction, ostream &o)
 {
 	vector<string> params = instruction.getParams();
 	string paramsRegisters[] = {"%r9d", "%r8d", "%ecx", "%edx", "%esi", "%edi"};
+
+    string destination = params[0];
+    string functionName = params[1];
 	
 	// put each param into registers
-	for (int i = 0; i<params.size(); i++) {
+	for (int i = 2; i<params.size(); i++) {
 		if (regex_match(params[i], regex("-?[0-9]+")))
 		{ // constant
 			o << "movl	$" + params[i] << ", " << paramsRegisters[i] << "	#p ut param (constant) into register" << endl;
@@ -431,8 +434,10 @@ void generateCall(const IRInstr &instruction, ostream &o)
 		}
 	}
 
-	string functionName = instruction.getContainingBasicBlock()->label;
-	o << "call " << functionName << endl;
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+    Symbol *symbol = symbolTable->getSymbol(destination);
+	o << "  call " << functionName << endl;
+    o << "  movl    %eax, " <<  symbol->memoryAddress << "(%rbp)      # variable " << symbol->symbolName << endl;
 }
 
 void generateNewFunction(const IRInstr &instruction, ostream &o)
@@ -864,7 +869,8 @@ void X86Strategy::generate_assembly(const IRInstr &instruction, ostream &o)
         generateAndop(instruction, o);
         break;
     default:
-        cerr << "Unsupported instruction";
+        cerr << "unsupported instruction in bb " << instruction.getContainingBasicBlock()->label << endl;
+        cerr << "Unsupported instruction" << endl;
     }
 }
 
@@ -875,7 +881,8 @@ void X86Strategy::generate_prologue(ostream &o, const CFG & cfg)
     o << ".globl	" << functionName << "\n"
       << functionName << ": \n"
                  "  pushq	%rbp\n"
-                 "  movq	%rsp, %rbp\n";
+                 "  movq	%rsp, %rbp\n"
+                 "  subq    $" << (cfg.getNumberOfVariables() * 4) << ", %rsp\n";
 }
 
 void X86Strategy::generate_epilogue(ostream &o, const CFG &cfg)
