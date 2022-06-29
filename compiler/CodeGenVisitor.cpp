@@ -366,7 +366,6 @@ std::any CodeGenVisitor::visitParenthesis(ifccParser::ParenthesisContext *ctx)
 
 std::any CodeGenVisitor::visitUnaryExpression(ifccParser::UnaryExpressionContext *ctx)
 {
-
 	SymbolTable *symbolTable = this->getSymbolTableOfCurrentBlock();
 
 	string oper = ctx->op->getText();
@@ -380,7 +379,24 @@ std::any CodeGenVisitor::visitUnaryExpression(ifccParser::UnaryExpressionContext
 
 	// int variableAddress = variableToMemoryMap[exprVarName] * -4;
 
-	if (oper == "-")
+	if (oper == "!")
+	{
+
+		Type *intType = PrimitiveType::getInstance()->getType("int");
+		bb->add_IRInstr(IRInstr::Operation::unary_not, intType, {temporarySymbolAdded.symbolName, exprVarName});
+
+		return (string)temporarySymbolAdded.symbolName;
+	}
+	else if (oper == "!-")
+	{
+		Type *intType = PrimitiveType::getInstance()->getType("int");
+		bb->add_IRInstr(IRInstr::Operation::sub, intType, {temporarySymbolAdded.symbolName, "0", exprVarName});
+		Symbol otherTemporarySymbolAdded = symbolTable->addTemporaryVariable();
+		bb->add_IRInstr(IRInstr::Operation::unary_not, intType, {otherTemporarySymbolAdded.symbolName, temporarySymbolAdded.symbolName});
+
+		return (string)otherTemporarySymbolAdded.symbolName;
+	}
+	else if (oper == "-")
 	{
 
 		Type *intType = PrimitiveType::getInstance()->getType("int");
@@ -407,7 +423,7 @@ std::any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 	bb->add_IRInstr(IRInstr::Operation::copy, intType, {rValueVariableName, variableName});
 	symbolTable->setVariableIsInitialized(variableName, true);
 
-	return "0";
+    return variableName;
 }
 
 const CFG &CodeGenVisitor::getCFG() const

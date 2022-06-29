@@ -250,7 +250,6 @@ void generateAdd(const IRInstr &instruction, ostream &o)
 
 void generateSub(const IRInstr &instruction, ostream &o)
 {
-    // TODO implement this function
     vector<string> params = instruction.getParams();
 
     // Param1 : Destination (register)
@@ -279,6 +278,30 @@ void generateSub(const IRInstr &instruction, ostream &o)
             o << "  movl    %eax, " << variableOffset << "(%rbp)    #variable " << symbol->symbolName << endl;
         }
     }
+}
+
+void generateUnaryNot(const IRInstr &instruction, ostream &o)
+{
+	// 0 = false => $0
+	// other value = true => $1
+
+    vector<string> params = instruction.getParams();
+    string destination = params[0];
+    string operand = params[1];
+
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+
+    // Operand
+    _makeOperation("movl", operand, "%eax", symbolTable, o);
+
+    o << "  test   %eax, %eax" << endl;
+    o << "  sete   %al" << endl;
+	o << "  movzbl   %al, %eax" << endl;
+
+	// Destination
+    Symbol * destinationSymbol = symbolTable->getSymbol(destination);
+    int offset = destinationSymbol->memoryAddress;
+    o << "  movl   %eax," << offset << "(%rbp)    # variable " << destinationSymbol->symbolName << endl;
 }
 
 void generateXor(const IRInstr &instruction, ostream &o)
@@ -574,7 +597,45 @@ void generateAndop(const IRInstr & instruction, ostream &o) {
 }
 
 void generateCmpne(const IRInstr & instruction, ostream &o) {
+// TODO check if negative constants work
+    vector<string> params = instruction.getParams();
 
+    // Param1 : Destination
+    string destination = params[0];
+
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+
+    // Param2 : op1 (register, constant or variable)
+    string operand1 = params[1];
+    _makeOperation("movl", operand1, "%eax", symbolTable, o);
+
+
+    // Param3 : op2 (register, constant or variable)
+    string operand2 = params[2];
+    _makeOperation("cmpl", operand2, "%eax", symbolTable, o);
+
+    o << "  setne    %al" << endl;
+    o << "  movzbl  %al, %eax" << endl;
+
+    // Destination
+    if (destination[0] == '%')
+    { // register
+        string mappedDestination = X86Strategy::registers[destination];
+
+        o << "  movl    %eax, " << mappedDestination << endl;
+    }
+    else
+    { // variable
+
+        SymbolTable * symbolTable = instruction.getSymbolTable();
+
+        Symbol *symbol = symbolTable->getSymbol(destination);
+        if (symbol != nullptr)
+        {
+            int variableOffset = symbol->memoryAddress;
+            o << "  movl    %eax, " << variableOffset << "(%rbp)        # variable " << symbol->symbolName << endl;
+        }
+    }
 }
 
 void generateCmpgt(const IRInstr & instruction, ostream &o) {
@@ -810,6 +871,9 @@ void X86Strategy::generate_assembly(const IRInstr &instruction, ostream &o)
         break;
     case (IRInstr::Operation::sub):
         generateSub(instruction, o);
+        break;
+	case (IRInstr::Operation::unary_not):
+        generateUnaryNot(instruction, o);
         break;
     case (IRInstr::Operation::xorOp):
         generateXor(instruction, o);

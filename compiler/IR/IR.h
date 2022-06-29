@@ -43,7 +43,6 @@ Exemple de IR.h trouvé sur moodle (peut-être qu'il faut le ranger ailleurs)
  * 		variable names for those operations. You have to get their address using
  * 		the symbol table.
  *
- *
  * ## 2 parameters operations (copy, ldconst)
  * 		Operand one : Source
  * 		Operand two : Destination
@@ -60,7 +59,7 @@ Exemple de IR.h trouvé sur moodle (peut-être qu'il faut le ranger ailleurs)
  * 		* wmem constant variableName
  *
  * ## 3 parameters operations
- * 	### add, sub, mul, div, cmp_e, cmp_ne, cmp_gt, cmp_ge, cmp_lt, cmp_le, andop, orop, xor
+ * 	### add, sub, mul, div, cmp_e, cmp_ne, cmp_gt, cmp_ge, cmp_lt, cmp_le, andop, orop, xor, unary_not
  * 		Operand one : Destination
  * 		Operand two : op1 (register, constant or variable)
  * 		Operand three : op2 (register, constant or variable)
@@ -78,6 +77,7 @@ class IRInstr {
 		copy,
 		add,
 		sub,
+		unary_not,
 		mul,
 		div,
 		xorOp,
