@@ -126,3 +126,7 @@ void SymbolTable::setVariableIsInitialized(string variableName, bool isInitializ
 int SymbolTable::getNextAllowedAddress () {
 	return this->memoryOffset - (this->variableToMemoryMap.size() * 4) -4;
 }
+
+int SymbolTable::getSize() {
+	return this->variableToMemoryMap.size();
+}

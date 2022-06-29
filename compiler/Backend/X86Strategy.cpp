@@ -430,7 +430,51 @@ void generateDiv(const IRInstr &instruction, ostream &o)
 
 void generateCall(const IRInstr &instruction, ostream &o)
 {
-    // TODO implement this function
+	vector<string> params = instruction.getParams();
+	string paramsRegisters[] = {"%r9d", "%r8d", "%ecx", "%edx", "%esi", "%edi"};
+
+    string destination = params[0];
+    string functionName = params[1];
+	
+	// put each param into registers
+	for (int i = 2; i<params.size(); i++) {
+		if (regex_match(params[i], regex("-?[0-9]+")))
+		{ // constant
+			o << "movl	$" + params[i] << ", " << paramsRegisters[i] << "	#p ut param (constant) into register" << endl;
+		}
+		else if (params[i][0] == '%')
+		{ // register
+			o << "movl	" + X86Strategy::registers[params[i]] << ", " << paramsRegisters[i] << "	# put param (register) into register" << endl;
+		}
+		else
+		{ // variable
+			SymbolTable * symbolTable = instruction.getSymbolTable();
+			Symbol *symbol = symbolTable->getSymbol(params[i]);
+			if (symbol != nullptr)
+			{
+				o << "movl	" + to_string(symbol->memoryAddress) + "(%rbp), " << paramsRegisters[i] << "	# put param (variable) into register" << endl;
+			}
+		}
+	}
+
+    SymbolTable * symbolTable = instruction.getSymbolTable();
+    Symbol *symbol = symbolTable->getSymbol(destination);
+	o << "  call " << functionName << endl;
+    o << "  movl    %eax, " <<  symbol->memoryAddress << "(%rbp)      # variable " << symbol->symbolName << endl;
+}
+
+void generateNewFunction(const IRInstr &instruction, ostream &o)
+{
+	string functionName = instruction.getContainingBasicBlock()->label;
+	o << "." << functionName << endl;
+
+	vector<string> params = instruction.getParams();
+	string paramsRegisters[] = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d"};
+
+	// get each param from registers
+	for (int i = 0; i<params.size(); i++) {
+		o << "movl	" << paramsRegisters[i] << ", " << (-4 * (i + 1)) << "(%rbp)	# get param from register" << endl;
+	}
 }
 
 string getOperandString(string operandInParam, SymbolTable& symbolTable)
@@ -849,6 +893,9 @@ void X86Strategy::generate_assembly(const IRInstr &instruction, ostream &o)
     case (IRInstr::Operation::call):
         generateCall(instruction, o);
         break;
+	case (IRInstr::Operation::new_function):
+        generateNewFunction(instruction, o);
+        break;
     case (IRInstr::Operation::cmp_eq):
         generateCmpeq(instruction, o);
         break;
@@ -886,7 +933,8 @@ void X86Strategy::generate_assembly(const IRInstr &instruction, ostream &o)
         generateAndop(instruction, o);
         break;
     default:
-        cerr << "Unsupported instruction";
+        cerr << "unsupported instruction in bb " << instruction.getContainingBasicBlock()->label << endl;
+        cerr << "Unsupported instruction" << endl;
     }
 }
 
@@ -897,7 +945,8 @@ void X86Strategy::generate_prologue(ostream &o, const CFG & cfg)
     o << ".globl	" << functionName << "\n"
       << functionName << ": \n"
                  "  pushq	%rbp\n"
-                 "  movq	%rsp, %rbp\n";
+                 "  movq	%rsp, %rbp\n"
+                 "  subq    $" << (cfg.getNumberOfVariables() * 4) << ", %rsp\n";
 }
 
 void X86Strategy::generate_epilogue(ostream &o, const CFG &cfg)

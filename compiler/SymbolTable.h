@@ -48,5 +48,7 @@ public:
 	int getNextAllowedAddress();
 
 	int getAddress(string variableName);
+
+	int getSize();
 };
 

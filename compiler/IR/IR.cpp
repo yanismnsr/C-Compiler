@@ -141,11 +141,19 @@ void CFG::add_exit_falseBB(BasicBlock * ifBb, BasicBlock * newBb) {
     // cout << endl;
 }
 
+int CFG::getNumberOfVariables () const {
+    int total = 0;
+    for (BasicBlock * bb : this->bbs) {
+        total += bb->symbolTable->getSize();
+    }
+    return total;
+}
+
 
 // Basic block
 BasicBlock::BasicBlock(CFG* cfg, string entry_label) {
     this->cfg = cfg;
-    this->label = entry_label;
+    this->label = cfg->functionName + "_" + entry_label;
     this->symbolTable = new SymbolTable(this);
     this->exit_true = nullptr;
     this->exit_false = nullptr;
@@ -154,7 +162,7 @@ BasicBlock::BasicBlock(CFG* cfg, string entry_label) {
 
 BasicBlock::BasicBlock(CFG* cfg, string entry_label, BasicBlock & parentBasicBlock) {
     this->cfg = cfg;
-    this->label = entry_label;
+    this->label = cfg->functionName + "_" + entry_label;
     this->symbolTable = new SymbolTable(this, parentBasicBlock.symbolTable);
     this->exit_true = nullptr;
     this->exit_false = nullptr;

@@ -2,6 +2,7 @@
 
 #include <map>
 #include <fstream> // std::ifstream
+#include <vector>
 
 #include "antlr4-runtime.h"
 #include "generated/ifccBaseVisitor.h"
@@ -17,8 +18,9 @@ class CodeGenVisitor : public ifccBaseVisitor {
 private:
 	bool returnPresent = false;
 	int nbTemporaryVariable = 0;
-	CFG cfg;
-	BasicBlock * epilogue;
+	vector<CFG*> cfgs;
+	CFG* currentCfg = nullptr;
+	BackendStrategy * strategy;
 
 	bool endOfBlock = false; 		// State variable to say that we just closed a block. It means that the 
 									// next instruction has to create a new block
@@ -34,6 +36,8 @@ public:
 	CodeGenVisitor(BackendStrategy * backendStrategy);
 
 	virtual std::any visitProg(ifccParser::ProgContext *ctx) override;
+
+	virtual std::any visitFunction(ifccParser::FunctionContext *ctx) override;
 
 	virtual std::any visitDeclaration(ifccParser::DeclarationContext *ctx) override;
 
@@ -69,7 +73,15 @@ public:
 
 	virtual std::any visitXorOperation(ifccParser::XorOperationContext *ctx) override;
 
+	virtual std::any visitFunctionCallExpr(ifccParser::FunctionCallExprContext *ctx) override;
+
+	virtual std::any visitFunctionCall(ifccParser::FunctionCallContext *ctx) override;
+
+	virtual void addCfg(CFG* newCfg);
+
 	const CFG & getCFG() const;
+
+	void generateAssembly (ostream & o);
 
 	SymbolTable * getSymbolTableOfCurrentBlock();
 

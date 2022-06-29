@@ -2,7 +2,11 @@ grammar ifcc;
 
 axiom : prog ;
 
-prog : 'int' 'main' '(' ')' block ;
+prog : function + ;
+
+function : type IDENTIFIER '(' ')' block;
+
+block : '{' ( (instr ';') | block | ifInstr | whileInstr)*  '}' ;
 
 instr : instruction;
 
@@ -10,7 +14,10 @@ instruction :
     returnexp                   # ret
     | declaration               # declareVar
     | affectation               # affect
+    | functionCall              # functionCallInstruction
     ;
+
+functionCall : IDENTIFIER '(' ')';
 
 returnexp :
     RETURN expr? ;
@@ -29,18 +36,17 @@ whileInstr: 'while' '(' expr ')' (instr | block) ;
 
 elseInstr: 'else' (instr | ifInstr | block | whileInstr) ;
 
-block : '{' ( (instr ';') | block | ifInstr | whileInstr)*  '}' ;
-
 expr:
     IDENTIFIER                                                                              # exprIdentifier
     | CONST                                                                                 # exprConst
-    | op=(MINUS | ADD | UNARY_NOT | UNARY_NOT_WITH_MINUS) expr                                                     # unaryExpression
+    | op=(MINUS | ADD | UNARY_NOT | UNARY_NOT_WITH_MINUS) expr                              # unaryExpression
     | expr op=(MULT | DIV) expr                                                             # multdiv
     | expr op=(ADD | MINUS) expr                                                            # addmin
     | expr XOR expr                                                                         # xorOperation
     | '(' expr ')'                                                                          # parenthesis
     | expr COMPARISONOPERATOR expr                                                          # simpleComparison
     | expr CONDOPERATORS expr                                                               # multipleOperatorsComparison
+    | functionCall                                                                          # functionCallExpr
     | affectation                                                                           # exprAffectation
     ;
 

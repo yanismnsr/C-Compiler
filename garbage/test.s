@@ -1,22 +1,33 @@
-returning #tmp3
+.globl	function
+function: 
+  pushq	%rbp
+  movq	%rsp, %rbp
+  subq    $4, %rsp
+function_prologue:
+  jmp function_BB0 # unconditional jump to true block
+function_epilogue:
+   movq	%rbp, %rsp
+   popq	%rbp
+   retq
+function_BB0:
+  movl    $3, -8(%rbp)   # variable #tmp1
+  movl    -8(%rbp), %eax
+  jmp function_epilogue # unconditional jump to true block
 .globl	_main
 _main: 
   pushq	%rbp
   movq	%rsp, %rbp
-  jmp BB0 # unconditional jump to true block
-epilogue:
+  subq    $4, %rsp
+_main_prologue:
+  jmp _main_BB0 # unconditional jump to true block
+_main_epilogue:
    movq	%rbp, %rsp
    popq	%rbp
    retq
-BB0:
-  movl    $1, -12(%rbp)   # variable #tmp1
-  movl    -12(%rbp), %eax     # variable #tmp1
-  movl    %eax, -8(%rbp)     # variable a
-  movl    $3, -20(%rbp)   # variable #tmp2
-  movl    -20(%rbp), %eax     # variable #tmp2
-  movl    %eax, -16(%rbp)     # variable b
-  movl    -8(%rbp), %eax        # variable a
-  xorl    -16(%rbp), %eax        # variable b
-  movl    %eax, -24(%rbp)    #variable #tmp3
-  movl    -24(%rbp), %eax
-  jmp epilogue # unconditional jump to true block
+_main_BB0:
+  jmp _main_BB1 # unconditional jump to true block
+_main_BB1:
+  call function
+  movl    %eax, -8(%rbp)      # variable #tmp1
+  movl    -8(%rbp), %eax
+  jmp _main_epilogue # unconditional jump to true block

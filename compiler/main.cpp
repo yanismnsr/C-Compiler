@@ -75,7 +75,7 @@ int main(int argn, const char **argv)
 
     CodeGenVisitor v(backendStrategy);
     v.visit(tree);
-    v.getCFG().gen_asm(cout);
+    v.generateAssembly(cout);
 
 	
     SymbolTable * symbolTable = v.getCFG().current_bb->symbolTable;
