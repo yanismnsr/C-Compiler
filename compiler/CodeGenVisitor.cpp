@@ -23,7 +23,7 @@ std::any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 }
 
 std::any CodeGenVisitor::visitFunction(ifccParser::FunctionContext *ctx) {
-	string functionName = ctx->IDENTIFIER()->getText();
+	string functionName = ctx->IDENTIFIER(0)->getText();
 
 	if (functionName == "main") {
 		#ifdef __APPLE__
@@ -35,6 +35,11 @@ std::any CodeGenVisitor::visitFunction(ifccParser::FunctionContext *ctx) {
 
 	BasicBlock *prologue = new BasicBlock(this->currentCfg, "prologue");
 	this->currentCfg->add_bb(prologue);
+
+	vector<antlr4::tree::TerminalNode *> ids = ctx->IDENTIFIER();
+	for (int i = 1; i < ids.size(); ++i) {
+		this->currentCfg->current_bb->symbolTable->addVariable(ids[i]->getText());
+	}
 
 	this->currentCfg->epilogue = new BasicBlock(this->currentCfg, "epilogue");
 	this->currentCfg->add_bb(this->currentCfg->epilogue);
@@ -493,9 +498,14 @@ std::any CodeGenVisitor::visitFunctionCall(ifccParser::FunctionCallContext *ctx)
 	PrimitiveType *pt = PrimitiveType::getInstance();
 	Type *voidType = pt->getType("void");
 
-	this->currentCfg->current_bb->add_IRInstr(IRInstr::Operation::call, voidType, {temporarySymbolAdded.symbolName, functionName});
+	vector<string> params = {temporarySymbolAdded.symbolName, functionName};
+	vector<ifccParser::ExprContext * > expressions = ctx->expr();
+	for (ifccParser::ExprContext *  node : expressions) {
+		string variableName = any_cast<string>(visit(node));
+		params.push_back(variableName);
+	}
 
-	visitChildren(ctx);
+	this->currentCfg->current_bb->add_IRInstr(IRInstr::Operation::call, voidType, params);
 
 	return (string) temporarySymbolAdded.symbolName;
 }
