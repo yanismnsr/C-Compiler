@@ -4,7 +4,7 @@ axiom : prog ;
 
 prog : function + ;
 
-function : type IDENTIFIER '(' ')' block;
+function : type IDENTIFIER '(' (type IDENTIFIER (',' type IDENTIFIER)*)? ')' block;
 
 block : '{' ( (instr ';') | block | ifInstr | whileInstr)*  '}' ;
 
@@ -17,7 +17,7 @@ instruction :
     | functionCall              # functionCallInstruction
     ;
 
-functionCall : IDENTIFIER '(' ')';
+functionCall : IDENTIFIER '(' (expr (',' expr)*)? ')';
 
 returnexp :
     RETURN expr? ;

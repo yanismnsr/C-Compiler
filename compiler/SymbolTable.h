@@ -24,7 +24,6 @@ typedef struct Symbol
 
 class SymbolTable {
 private:
-	map<string, Symbol*> variableToMemoryMap;
 	int nbTemporaryVariables = 0;
 	bool hasError = false;
 	ofstream warningsFile;
@@ -37,6 +36,7 @@ private:
 	void writeWarning(string message);
 	void cleanWarningsFile();
 public:
+	map<string, Symbol*> variableToMemoryMap;
 	SymbolTable(BasicBlock* bb);
 	SymbolTable(BasicBlock* bb, SymbolTable* parentSymbolTable);
 	Symbol& addVariable(string variableName);
