@@ -57,31 +57,43 @@ cd tests
 ```
 
 ## Features 
-For now, it can compile basic programs with the following : 
-* Variable declaration
+This program uses an intermediate representation to make it easily extandable to 
+more architectures.
+It can compile basic programs with the following features: 
+* Multiple variable declaration
 * Affectation of constants to variables 
 * Affectation of variable to variable
+* If-Else blocks
 * Evaluation of an arithmetic expression with respect of priorities
     * Addition
     * Substraction
     * Multiplication
     * Division
+    * And ('&')
+    * Or ('|')
+* Comparison operators :
+    * equals ('==')
+    * not equal ('!=')
+    * Lower equal (<=)
+    * Lower (<)
+    * Greater (>)
+    * Greater equal(>=)
 * Evaluation of an expessions with "-" and "+" unary operators
 * Evaluation of an expression with parenthesis
+* Scopes with blocks ("{}")
+* While loops
+* Return in any block
+* Variable declaration anywhere in the program
+* Standard functions : 
+    * putchar
+    * getchar
+* Define and call functions with up to 6 parameters
 
 Moreover, the compiler is also capable of displaying warnings in the following cases : 
 * If a variable is declared but never used
 
-Finally, it also makes the following verifications :
+To finish, it makes the following verifications :
 * That evey used variable is declared
-
-
-## Coming features
-* Include intermediate representation (IR), to be able to support multiple target ISAs (Instruction Set Architecture) for the generated assembly 
-* ARM assembly support
-* If-then-else
-* For and while loops
-* Function calls
 
 # Our team members
 * [Nikita TEREKHOV](https://github.com/neeeekitos)
